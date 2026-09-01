@@ -1,12 +1,46 @@
 /**
  * iDengue Surveillance Dashboard - Interactive Logic
+ * Features:
+ * - Malaysia Total Mode vs State-by-State Comparison Mode
+ * - Epidemiological Weekly Trend & Daily Trend
+ * - Full 15-State Comparison Ranking Chart (Daily & Cumulative)
+ * - Main Table Sorted by Cumulative Descending
  */
 
 let appData = null;
 let currentSort = { column: 'cum', order: 'desc' };
 let currentSearch = '';
+let currentGraphMode = 'total'; // 'total' | 'comparison'
+let currentComparisonMetric = 'cumulative'; // 'cumulative' | 'daily'
 let weeklyChart = null;
 let dailyChart = null;
+let stateComparisonChart = null;
+
+// Palette for 15 states + Malaysia total
+const STATE_COLORS = {
+  'SELANGOR': '#EF4444',
+  'WILAYAH PERSEKUTUAN': '#F59E0B',
+  'JOHOR': '#06B6D4',
+  'NEGERI SEMBILAN': '#8B5CF6',
+  'SABAH': '#10B981',
+  'PERAK': '#3B82F6',
+  'KELANTAN': '#EC4899',
+  'PULAU PINANG': '#14B8A6',
+  'PAHANG': '#F97316',
+  'SARAWAK': '#84CC16',
+  'KEDAH': '#6366F1',
+  'MELAKA': '#EAB308',
+  'TERENGGANU': '#A855F7',
+  'PERLIS': '#94A3B8',
+  'WILAYAH PERSEKUTUAN LABUAN': '#2DD4BF',
+  'MALAYSIA': '#06B6D4',
+};
+
+const DEFAULT_COLOR_PALETTE = [
+  '#EF4444', '#F59E0B', '#06B6D4', '#8B5CF6', '#10B981',
+  '#3B82F6', '#EC4899', '#14B8A6', '#F97316', '#84CC16',
+  '#6366F1', '#EAB308', '#A855F7', '#94A3B8', '#2DD4BF'
+];
 
 document.addEventListener('DOMContentLoaded', async () => {
   await initData();
@@ -19,13 +53,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function initData() {
-  // 1. Try window.IDENGUE_DATA (from data.js)
   if (window.IDENGUE_DATA && window.IDENGUE_DATA.latest) {
     appData = window.IDENGUE_DATA;
     return;
   }
 
-  // 2. Fallback fetch latest.json
   try {
     const res = await fetch('data/latest.json');
     if (res.ok) {
@@ -44,7 +76,6 @@ async function initData() {
           }
         }
       };
-      // Populate matrix
       latest.states.forEach(s => {
         appData.daily_matrix[latest.report_date][s.state] = s.daily_cases;
         appData.weekly_matrix[`${latest.epid_year}-W${String(latest.epid_week).padStart(2, '0')}`].states[s.state] = s.daily_cases;
@@ -60,15 +91,16 @@ async function initData() {
 function initUI() {
   if (!appData || !appData.latest) return;
   const select = document.getElementById('state-filter-select');
-  select.innerHTML = '<option value="MALAYSIA">Semua Negeri (MALAYSIA - Total)</option>';
-
-  const states = [...appData.latest.states].sort((a, b) => a.state.localeCompare(b.state));
-  states.forEach(s => {
-    const opt = document.createElement('option');
-    opt.value = s.state;
-    opt.textContent = s.state;
-    select.appendChild(opt);
-  });
+  if (select) {
+    select.innerHTML = '<option value="MALAYSIA">Semua Negeri (MALAYSIA)</option>';
+    const states = [...appData.latest.states].sort((a, b) => a.state.localeCompare(b.state));
+    states.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.state;
+      opt.textContent = s.state;
+      select.appendChild(opt);
+    });
+  }
 }
 
 function renderHeader() {
@@ -115,7 +147,6 @@ function renderKPIs() {
   document.getElementById('kpi-cum-total').textContent = Number(total.cumulative_cases).toLocaleString();
   document.getElementById('kpi-cum-sub').textContent = `Dari ${lat.cumulative_start_raw || '4 Jan 2026'}`;
 
-  // Top state by cumulative
   const sortedByCum = [...lat.states].sort((a, b) => b.cumulative_cases - a.cumulative_cases);
   const top = sortedByCum[0];
   if (top) {
@@ -137,13 +168,11 @@ function renderTable() {
 
   let rows = [...lat.states];
 
-  // Apply search
   if (currentSearch.trim() !== '') {
     const q = currentSearch.toLowerCase();
     rows = rows.filter(r => r.state.toLowerCase().includes(q));
   }
 
-  // Apply sort
   rows.sort((a, b) => {
     let vA = a[currentSort.column === 'cum' ? 'cumulative_cases' : currentSort.column === 'daily' ? 'daily_cases' : 'state'];
     let vB = b[currentSort.column === 'cum' ? 'cumulative_cases' : currentSort.column === 'daily' ? 'daily_cases' : 'state'];
@@ -154,7 +183,6 @@ function renderTable() {
     return currentSort.order === 'asc' ? vA - vB : vB - vA;
   });
 
-  // Find max cumulative for the relative bar
   const maxCum = Math.max(...lat.states.map(s => s.cumulative_cases), 1);
 
   tbody.innerHTML = '';
@@ -189,7 +217,6 @@ function renderTable() {
     tbody.appendChild(tr);
   });
 
-  // Update total footer row
   document.getElementById('tf-daily-total').innerHTML = `<strong>${Number(lat.total.daily_cases).toLocaleString()}</strong>`;
   document.getElementById('tf-cum-total').innerHTML = `<strong>${Number(lat.total.cumulative_cases).toLocaleString()}</strong>`;
 }
@@ -202,7 +229,6 @@ function sortTable(column) {
     currentSort.order = column === 'state' ? 'asc' : 'desc';
   }
 
-  // Update indicators
   ['state', 'daily', 'cum'].forEach(c => {
     const el = document.getElementById(`sort-${c}`);
     if (el) {
@@ -219,63 +245,117 @@ function sortTable(column) {
   renderTable();
 }
 
+function setGraphMode(mode) {
+  currentGraphMode = mode;
+  document.getElementById('btn-mode-total').classList.toggle('active', mode === 'total');
+  document.getElementById('btn-mode-compare').classList.toggle('active', mode === 'comparison');
+
+  const selectedState = document.getElementById('state-filter-select').value;
+  updateCharts(selectedState);
+}
+
+function setComparisonMetric(metric) {
+  currentComparisonMetric = metric;
+  document.getElementById('btn-metric-cum').classList.toggle('active', metric === 'cumulative');
+  document.getElementById('btn-metric-daily').classList.toggle('active', metric === 'daily');
+  renderStateComparisonChart();
+}
+
 function initCharts() {
   if (typeof Chart === 'undefined' || !appData) return;
   updateCharts('MALAYSIA');
+  renderStateComparisonChart();
 }
 
 function updateCharts(selectedState) {
   if (typeof Chart === 'undefined' || !appData) return;
 
-  document.getElementById('weekly-chart-tag').textContent = selectedState;
-  document.getElementById('daily-chart-tag').textContent = selectedState;
+  const isCompareMode = (currentGraphMode === 'comparison' && selectedState === 'MALAYSIA');
 
-  // 1. Weekly Epid Trend Chart
-  const weekLabels = [];
-  const weekValues = [];
+  // Update header badges and titles
+  const weeklyTag = document.getElementById('weekly-chart-tag');
+  const dailyTag = document.getElementById('daily-chart-tag');
+  const weeklyTitle = document.getElementById('weekly-chart-title');
+  const dailyTitle = document.getElementById('daily-chart-title');
 
+  if (isCompareMode) {
+    weeklyTag.textContent = 'PERBANDINGAN 15 NEGERI';
+    dailyTag.textContent = 'PERBANDINGAN 15 NEGERI';
+    weeklyTitle.textContent = 'Trend Mingguan Mengikut Negeri (Minggu Epid)';
+    dailyTitle.textContent = 'Trend Harian Mengikut Negeri';
+  } else {
+    weeklyTag.textContent = selectedState === 'MALAYSIA' ? 'JUMLAH KESELURUHAN (TOTAL)' : selectedState;
+    dailyTag.textContent = selectedState === 'MALAYSIA' ? 'JUMLAH KESELURUHAN (TOTAL)' : selectedState;
+    weeklyTitle.textContent = selectedState === 'MALAYSIA' ? 'Jumlah Keseluruhan Mingguan (Malaysia)' : `Trend Mingguan (${selectedState})`;
+    dailyTitle.textContent = selectedState === 'MALAYSIA' ? 'Jumlah Keseluruhan Harian (Malaysia)' : `Trend Harian (${selectedState})`;
+  }
+
+  // 1. Weekly Chart
+  renderWeeklyChart(selectedState, isCompareMode);
+
+  // 2. Daily Chart
+  renderDailyChart(selectedState, isCompareMode);
+}
+
+function renderWeeklyChart(selectedState, isCompareMode) {
   const weekKeys = appData.weeks || [];
-  weekKeys.forEach(wk => {
-    const wkObj = appData.weekly_matrix[wk];
-    if (wkObj) {
-      weekLabels.push(wkObj.label || wk);
-      if (selectedState === 'MALAYSIA') {
-        let sum = 0;
-        if (wkObj.states['MALAYSIA'] !== undefined) {
-          sum = wkObj.states['MALAYSIA'];
-        } else {
-          Object.entries(wkObj.states).forEach(([k, v]) => {
-            if (k !== 'MALAYSIA') sum += Number(v);
-          });
-        }
-        weekValues.push(sum);
-      } else {
-        weekValues.push(wkObj.states[selectedState] || 0);
-      }
-    }
-  });
-
+  const weekLabels = weekKeys.map(wk => appData.weekly_matrix[wk]?.label || wk);
   const ctxWeekly = document.getElementById('weeklyTrendChart').getContext('2d');
+
   if (weeklyChart) weeklyChart.destroy();
+
+  let datasets = [];
+
+  if (isCompareMode) {
+    // Multi-state stacked bar chart
+    const states = appData.latest.states.map(s => s.state);
+    datasets = states.map(st => {
+      const color = STATE_COLORS[st] || '#06B6D4';
+      const data = weekKeys.map(wk => appData.weekly_matrix[wk]?.states[st] || 0);
+      return {
+        label: st,
+        data: data,
+        backgroundColor: color,
+        borderWidth: 0,
+        stack: 'weekly_stack'
+      };
+    });
+  } else {
+    // Single total or single state bar chart
+    const values = weekKeys.map(wk => {
+      const wkObj = appData.weekly_matrix[wk];
+      if (!wkObj) return 0;
+      if (selectedState === 'MALAYSIA') {
+        if (wkObj.states['MALAYSIA'] !== undefined) return wkObj.states['MALAYSIA'];
+        let sum = 0;
+        Object.entries(wkObj.states).forEach(([k, v]) => { if (k !== 'MALAYSIA') sum += Number(v); });
+        return sum;
+      }
+      return wkObj.states[selectedState] || 0;
+    });
+
+    datasets = [{
+      label: selectedState === 'MALAYSIA' ? 'Jumlah Kes Mingguan (Malaysia)' : `Kes Mingguan (${selectedState})`,
+      data: values,
+      backgroundColor: 'rgba(6, 182, 212, 0.65)',
+      borderColor: '#06B6D4',
+      borderWidth: 1.5,
+      borderRadius: 6,
+    }];
+  }
 
   weeklyChart = new Chart(ctxWeekly, {
     type: 'bar',
-    data: {
-      labels: weekLabels,
-      datasets: [{
-        label: `Kes Mingguan (${selectedState})`,
-        data: weekValues,
-        backgroundColor: 'rgba(6, 182, 212, 0.65)',
-        borderColor: '#06B6D4',
-        borderWidth: 1.5,
-        borderRadius: 6,
-      }]
-    },
+    data: { labels: weekLabels, datasets: datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { labels: { color: '#94A3B8', font: { family: 'Plus Jakarta Sans', size: 12 } } },
+        legend: {
+          display: isCompareMode,
+          position: 'top',
+          labels: { color: '#94A3B8', boxWidth: 12, font: { family: 'Plus Jakarta Sans', size: 11 } }
+        },
         tooltip: {
           backgroundColor: '#1E293B',
           titleColor: '#F8FAFC',
@@ -287,10 +367,12 @@ function updateCharts(selectedState) {
       },
       scales: {
         x: {
+          stacked: isCompareMode,
           ticks: { color: '#64748B', font: { family: 'Plus Jakarta Sans', size: 11 } },
           grid: { color: 'rgba(255, 255, 255, 0.05)' }
         },
         y: {
+          stacked: isCompareMode,
           beginAtZero: true,
           ticks: { color: '#64748B', font: { family: 'JetBrains Mono', size: 11 } },
           grid: { color: 'rgba(255, 255, 255, 0.05)' }
@@ -298,46 +380,68 @@ function updateCharts(selectedState) {
       }
     }
   });
+}
 
-  // 2. Daily Trend Chart
-  const dailyLabels = [];
-  const dailyValues = [];
-
+function renderDailyChart(selectedState, isCompareMode) {
   const dateKeys = appData.dates || [];
-  dateKeys.forEach(dt => {
-    dailyLabels.push(dt);
-    const dayObj = appData.daily_matrix[dt] || {};
-    if (selectedState === 'MALAYSIA') {
-      dailyValues.push(dayObj['MALAYSIA'] !== undefined ? dayObj['MALAYSIA'] : 0);
-    } else {
-      dailyValues.push(dayObj[selectedState] || 0);
-    }
-  });
-
   const ctxDaily = document.getElementById('dailyTrendChart').getContext('2d');
+
   if (dailyChart) dailyChart.destroy();
+
+  let datasets = [];
+
+  if (isCompareMode) {
+    // Multi-line chart for each state
+    const states = appData.latest.states.map(s => s.state);
+    datasets = states.map(st => {
+      const color = STATE_COLORS[st] || '#EF4444';
+      const data = dateKeys.map(dt => appData.daily_matrix[dt]?.[st] || 0);
+      return {
+        label: st,
+        data: data,
+        borderColor: color,
+        backgroundColor: color,
+        borderWidth: 2,
+        pointRadius: 4,
+        tension: 0.3,
+        fill: false
+      };
+    });
+  } else {
+    // Single total or single state line/area chart
+    const values = dateKeys.map(dt => {
+      const dayObj = appData.daily_matrix[dt] || {};
+      if (selectedState === 'MALAYSIA') {
+        return dayObj['MALAYSIA'] !== undefined ? dayObj['MALAYSIA'] : 0;
+      }
+      return dayObj[selectedState] || 0;
+    });
+
+    datasets = [{
+      label: selectedState === 'MALAYSIA' ? 'Jumlah Kes Harian (Malaysia)' : `Kes Harian (${selectedState})`,
+      data: values,
+      borderColor: '#EF4444',
+      backgroundColor: 'rgba(239, 68, 68, 0.15)',
+      borderWidth: 2.5,
+      fill: true,
+      tension: 0.35,
+      pointBackgroundColor: '#EF4444',
+      pointRadius: 5,
+    }];
+  }
 
   dailyChart = new Chart(ctxDaily, {
     type: 'line',
-    data: {
-      labels: dailyLabels,
-      datasets: [{
-        label: `Kes Harian (${selectedState})`,
-        data: dailyValues,
-        borderColor: '#EF4444',
-        backgroundColor: 'rgba(239, 68, 68, 0.15)',
-        borderWidth: 2.5,
-        fill: true,
-        tension: 0.35,
-        pointBackgroundColor: '#EF4444',
-        pointRadius: 4,
-      }]
-    },
+    data: { labels: dateKeys, datasets: datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { labels: { color: '#94A3B8', font: { family: 'Plus Jakarta Sans', size: 12 } } },
+        legend: {
+          display: isCompareMode,
+          position: 'top',
+          labels: { color: '#94A3B8', boxWidth: 12, font: { family: 'Plus Jakarta Sans', size: 11 } }
+        },
         tooltip: {
           backgroundColor: '#1E293B',
           titleColor: '#F8FAFC',
@@ -362,27 +466,99 @@ function updateCharts(selectedState) {
   });
 }
 
+function renderStateComparisonChart() {
+  if (typeof Chart === 'undefined' || !appData || !appData.latest) return;
+  const ctx = document.getElementById('stateComparisonChart').getContext('2d');
+
+  if (stateComparisonChart) stateComparisonChart.destroy();
+
+  const isCum = (currentComparisonMetric === 'cumulative');
+  const metricKey = isCum ? 'cumulative_cases' : 'daily_cases';
+
+  // Sort states descending by selected metric
+  const sortedStates = [...appData.latest.states].sort((a, b) => b[metricKey] - a[metricKey]);
+
+  const labels = sortedStates.map(s => s.state);
+  const values = sortedStates.map(s => s[metricKey]);
+  const colors = sortedStates.map(s => STATE_COLORS[s.state] || '#06B6D4');
+
+  stateComparisonChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: isCum ? 'Jumlah Kes Terkumpul (YTD)' : 'Jumlah Kes Harian Terkini',
+        data: values,
+        backgroundColor: colors.map(c => c + 'CC'),
+        borderColor: colors,
+        borderWidth: 1.5,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1E293B',
+          titleColor: '#F8FAFC',
+          bodyColor: '#67E8F9',
+          borderColor: '#334155',
+          borderWidth: 1,
+          padding: 10,
+          callbacks: {
+            label: function(context) {
+              const totalVal = isCum ? appData.latest.total.cumulative_cases : appData.latest.total.daily_cases;
+              const pct = totalVal > 0 ? ((context.parsed.x / totalVal) * 100).toFixed(2) : 0;
+              return `${Number(context.parsed.x).toLocaleString()} kes (${pct}% dari Malaysia)`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: { color: '#64748B', font: { family: 'JetBrains Mono', size: 11 } },
+          grid: { color: 'rgba(255, 255, 255, 0.05)' }
+        },
+        y: {
+          ticks: { color: '#F8FAFC', font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' } },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+}
+
 function setupEventListeners() {
-  // State filter change
   const select = document.getElementById('state-filter-select');
-  select.addEventListener('change', (e) => {
-    updateCharts(e.target.value);
-  });
+  if (select) {
+    select.addEventListener('change', (e) => {
+      updateCharts(e.target.value);
+    });
+  }
 
-  // Table search
   const searchInput = document.getElementById('table-search');
-  searchInput.addEventListener('input', (e) => {
-    currentSearch = e.target.value;
-    renderTable();
-  });
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      currentSearch = e.target.value;
+      renderTable();
+    });
+  }
 
-  // Export CSV
-  document.getElementById('btn-export-csv').addEventListener('click', () => {
-    window.location.href = 'data/latest.csv';
-  });
+  const btnCsv = document.getElementById('btn-export-csv');
+  if (btnCsv) {
+    btnCsv.addEventListener('click', () => {
+      window.location.href = 'data/latest.csv';
+    });
+  }
 
-  // Export JSON
-  document.getElementById('btn-export-json').addEventListener('click', () => {
-    window.location.href = 'data/latest.json';
-  });
+  const btnJson = document.getElementById('btn-export-json');
+  if (btnJson) {
+    btnJson.addEventListener('click', () => {
+      window.location.href = 'data/latest.json';
+    });
+  }
 }

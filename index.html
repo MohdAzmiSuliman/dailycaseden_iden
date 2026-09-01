@@ -103,10 +103,7 @@
     <!-- Controls Bar -->
     <section class="controls-bar">
       <div class="controls-left">
-        <label for="state-filter-select" class="ctrl-label">Pilih Negeri / Paparan Trend:</label>
-        <select id="state-filter-select" class="custom-select">
-          <option value="MALAYSIA">Semua Negeri (MALAYSIA - Total)</option>
-        </select>
+        <span class="ctrl-label">📊 Dashboard Interaktif Denggi Kebangsaan & Negeri</span>
       </div>
 
       <div class="controls-right">
@@ -122,16 +119,38 @@
       </div>
     </section>
 
+    <!-- Graph Mode Switcher Bar -->
+    <section class="graph-toggle-bar">
+      <div class="toggle-group-wrapper">
+        <span class="toggle-label">MOD GRAF MALAYSIA:</span>
+        <div class="toggle-btn-group" role="group">
+          <button id="btn-mode-total" class="toggle-pill active" onclick="setGraphMode('total')">
+            <span class="pill-icon">🇲🇾</span> Jumlah Keseluruhan (Total)
+          </button>
+          <button id="btn-mode-compare" class="toggle-pill" onclick="setGraphMode('comparison')">
+            <span class="pill-icon">📊</span> Perbandingan Antara Negeri (State Comparison)
+          </button>
+        </div>
+      </div>
+
+      <div class="state-select-wrapper">
+        <label for="state-filter-select" class="ctrl-label">Penapis Negeri:</label>
+        <select id="state-filter-select" class="custom-select">
+          <option value="MALAYSIA">Semua Negeri (MALAYSIA)</option>
+        </select>
+      </div>
+    </section>
+
     <!-- Visualizations Section -->
     <section class="charts-grid">
       <!-- Weekly Epid Trend Chart -->
       <div class="chart-panel">
         <div class="panel-header">
           <div>
-            <h2 class="panel-title">Trend Mingguan (Mengikut Minggu Epidemiologi)</h2>
-            <p class="panel-subtitle">Jumlah kes denggi mingguan berdasarkan Takwim Minggu Epid Malaysia (Ahad - Sabtu)</p>
+            <h2 class="panel-title" id="weekly-chart-title">Trend Mingguan (Minggu Epidemiologi)</h2>
+            <p class="panel-subtitle" id="weekly-chart-subtitle">Jumlah kes denggi mingguan berdasarkan Takwim Minggu Epid Malaysia</p>
           </div>
-          <span class="panel-tag" id="weekly-chart-tag">MALAYSIA</span>
+          <span class="panel-tag" id="weekly-chart-tag">JUMLAH KESELURUHAN</span>
         </div>
         <div class="chart-wrapper">
           <canvas id="weeklyTrendChart"></canvas>
@@ -142,13 +161,30 @@
       <div class="chart-panel">
         <div class="panel-header">
           <div>
-            <h2 class="panel-title">Trend Kes Harian</h2>
-            <p class="panel-subtitle">Pergerakan kes denggi harian dari tarikh ke tarikh</p>
+            <h2 class="panel-title" id="daily-chart-title">Trend Kes Harian</h2>
+            <p class="panel-subtitle" id="daily-chart-subtitle">Pergerakan kes denggi harian dari tarikh ke tarikh</p>
           </div>
-          <span class="panel-tag" id="daily-chart-tag">MALAYSIA</span>
+          <span class="panel-tag" id="daily-chart-tag">JUMLAH KESELURUHAN</span>
         </div>
         <div class="chart-wrapper">
           <canvas id="dailyTrendChart"></canvas>
+        </div>
+      </div>
+
+      <!-- State Comparison Ranking Bar Chart (Full Width) -->
+      <div class="chart-panel full-width" id="state-breakdown-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Perbandingan Kes Antara 15 Negeri di Malaysia</h2>
+            <p class="panel-subtitle">Perbandingan langsung beban kes denggi mengikut setiap negeri (disusun mengikut jumlah kes)</p>
+          </div>
+          <div class="bar-metric-toggle">
+            <button class="metric-btn active" id="btn-metric-cum" onclick="setComparisonMetric('cumulative')">Kes Terkumpul</button>
+            <button class="metric-btn" id="btn-metric-daily" onclick="setComparisonMetric('daily')">Kes Harian</button>
+          </div>
+        </div>
+        <div class="chart-wrapper tall">
+          <canvas id="stateComparisonChart"></canvas>
         </div>
       </div>
     </section>
