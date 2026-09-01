@@ -1,8 +1,11 @@
 # 🦟 iDengue Malaysia Daily Surveillance & Analytics
 
+[![Live Dashboard](https://img.shields.io/badge/🌐_Live_Dashboard-Visit_Website-06B6D4?style=for-the-badge)](https://MohdAzmiSuliman.github.io/dailycaseden_iden/)
 [![Daily Ingestion & Dashboard Update](https://github.com/MohdAzmiSuliman/dailycaseden_iden/actions/workflows/daily_scrape.yml/badge.svg)](https://github.com/MohdAzmiSuliman/dailycaseden_iden/actions/workflows/daily_scrape.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Zero-Dependency](https://img.shields.io/badge/Python-Standard%20Lib-brightgreen.svg)](scraper.py)
+
+> 🔗 **Live Surveillance Dashboard**: [https://MohdAzmiSuliman.github.io/dailycaseden_iden/](https://MohdAzmiSuliman.github.io/dailycaseden_iden/)
 
 Automated daily scraper, historical time-series generator, and interactive surveillance dashboard for dengue fever cases in Malaysia, sourced directly from **[iDengue MYSA](https://idengue.mysa.gov.my/index.php)** / **CPRC KKM**.
 

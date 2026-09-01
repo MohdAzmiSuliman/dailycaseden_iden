@@ -83,7 +83,26 @@ function renderHeader() {
 
   if (lat.scraped_at) {
     const dt = new Date(lat.scraped_at);
-    document.getElementById('scraped-timestamp-note').textContent = `Status ingestion: ${dt.toLocaleString('en-MY')}`;
+    const dateFormatted = dt.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+    const timeFormatted = dt.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+    const fullFormatted = `${dateFormatted} • ${timeFormatted}`;
+
+    const dateElem = document.getElementById('hdr-last-updated-date');
+    if (dateElem) dateElem.textContent = fullFormatted;
+
+    const timeElem = document.getElementById('hdr-last-updated-time');
+    if (timeElem) timeElem.textContent = `Waktu Malaysia (MYT / UTC+8)`;
+
+    document.getElementById('scraped-timestamp-note').textContent = `Auto-ingestion terakhir dijalankan pada: ${fullFormatted} (MYT).`;
   }
 }
 
