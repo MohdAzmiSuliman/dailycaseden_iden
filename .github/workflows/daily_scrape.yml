@@ -1,0 +1,45 @@
+name: Daily iDengue Scraper & Dashboard Update
+
+on:
+  schedule:
+    # Runs everyday at 02:00 UTC (10:00 AM Malaysia Time, UTC+8)
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'daily-dengue-scrape'
+  cancel-in-progress: false
+
+jobs:
+  scrape-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run iDengue Daily Scraper
+        run: |
+          python scraper.py
+
+      - name: Commit and push updated datasets
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data/ data.js
+          if git diff --staged --quiet; then
+            echo "No new updates from iDengue for today."
+          else
+            git commit -m "Auto-update: Dengue surveillance data $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+          fi

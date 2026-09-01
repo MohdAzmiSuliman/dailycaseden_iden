@@ -1,0 +1,4 @@
+# The core scraper runs using Python standard library (zero external dependencies).
+# Optional packages for custom analysis / notebooks:
+pandas>=2.0.0
+requests>=2.28.0

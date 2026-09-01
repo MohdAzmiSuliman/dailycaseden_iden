@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iDengue Malaysia - Daily & Weekly Surveillance Dashboard</title>
+  <meta name="description" content="Daily and Weekly Epidemiological Dengue Surveillance Dashboard for Malaysia, powered by iDengue MYSA and CPRC KKM." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <!-- Chart.js for interactive visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="dashboard-wrapper">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="brand-area">
+          <div class="brand-icon">🦟</div>
+          <div>
+            <div class="badge-row">
+              <span class="live-pill"><span class="pulse-dot"></span> LIVE SURVEILLANCE</span>
+              <span class="source-tag">Source: iDengue (MYSA / CPRC KKM)</span>
+            </div>
+            <h1 class="main-title">iDengue Malaysia Surveillance Dashboard</h1>
+            <p class="subtitle">Laporan Harian & Mingguan Kes Denggi Mengikut Minggu Epidemiologi (ME)</p>
+          </div>
+        </div>
+
+        <div class="header-meta">
+          <div class="meta-card">
+            <div class="meta-label">TARIKH LAPORAN</div>
+            <div class="meta-value" id="hdr-report-date">-</div>
+            <div class="meta-sub" id="hdr-cum-period">Kumulatif dari -</div>
+          </div>
+          <div class="meta-card highlight">
+            <div class="meta-label">MINGGU EPIDEMIOLOGI</div>
+            <div class="meta-value accent" id="hdr-epid-week">-</div>
+            <div class="meta-sub" id="hdr-epid-dates">-</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Top KPI Cards -->
+    <section class="kpi-grid">
+      <div class="kpi-card danger-tint">
+        <div class="kpi-header">
+          <span class="kpi-title">KES HARIAN (MALAYSIA)</span>
+          <span class="kpi-icon">📊</span>
+        </div>
+        <div class="kpi-number" id="kpi-daily-total">-</div>
+        <div class="kpi-footer">
+          <span class="kpi-badge" id="kpi-daily-badge">Hari Ini</span>
+          <span class="kpi-desc">Jumlah kes baharu dilaporkan</span>
+        </div>
+      </div>
+
+      <div class="kpi-card primary-tint">
+        <div class="kpi-header">
+          <span class="kpi-title">JUMLAH KES TERKUMPUL</span>
+          <span class="kpi-icon">📈</span>
+        </div>
+        <div class="kpi-number" id="kpi-cum-total">-</div>
+        <div class="kpi-footer">
+          <span class="kpi-badge neutral">YTD 2026</span>
+          <span class="kpi-desc" id="kpi-cum-sub">Dari 4 Jan 2026</span>
+        </div>
+      </div>
+
+      <div class="kpi-card warning-tint">
+        <div class="kpi-header">
+          <span class="kpi-title">NEGERI TERTINGGI (KUMULATIF)</span>
+          <span class="kpi-icon">🏆</span>
+        </div>
+        <div class="kpi-number text-truncate" id="kpi-top-state">-</div>
+        <div class="kpi-footer">
+          <span class="kpi-badge high" id="kpi-top-cases">- kes</span>
+          <span class="kpi-desc" id="kpi-top-percent">- % daripada jumlah Malaysia</span>
+        </div>
+      </div>
+
+      <div class="kpi-card info-tint">
+        <div class="kpi-header">
+          <span class="kpi-title">STATUS EPIDEMIOLOGI</span>
+          <span class="kpi-icon">🗓️</span>
+        </div>
+        <div class="kpi-number" id="kpi-ew-short">-</div>
+        <div class="kpi-footer">
+          <span class="kpi-badge info" id="kpi-ew-badge">Minggu Aktif</span>
+          <span class="kpi-desc" id="kpi-states-count">15 Negeri / Wilayah</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Controls Bar -->
+    <section class="controls-bar">
+      <div class="controls-left">
+        <label for="state-filter-select" class="ctrl-label">Pilih Negeri / Paparan Trend:</label>
+        <select id="state-filter-select" class="custom-select">
+          <option value="MALAYSIA">Semua Negeri (MALAYSIA - Total)</option>
+        </select>
+      </div>
+
+      <div class="controls-right">
+        <button id="btn-export-csv" class="action-btn secondary">
+          <span>📥 Muat Turun CSV</span>
+        </button>
+        <button id="btn-export-json" class="action-btn secondary">
+          <span>📦 Muat Turun JSON</span>
+        </button>
+        <button id="btn-print" class="action-btn primary" onclick="window.print()">
+          <span>🖨️ Cetak / PDF</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Visualizations Section -->
+    <section class="charts-grid">
+      <!-- Weekly Epid Trend Chart -->
+      <div class="chart-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Trend Mingguan (Mengikut Minggu Epidemiologi)</h2>
+            <p class="panel-subtitle">Jumlah kes denggi mingguan berdasarkan Takwim Minggu Epid Malaysia (Ahad - Sabtu)</p>
+          </div>
+          <span class="panel-tag" id="weekly-chart-tag">MALAYSIA</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="weeklyTrendChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Daily Trend Chart -->
+      <div class="chart-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Trend Kes Harian</h2>
+            <p class="panel-subtitle">Pergerakan kes denggi harian dari tarikh ke tarikh</p>
+          </div>
+          <span class="panel-tag" id="daily-chart-tag">MALAYSIA</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="dailyTrendChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- State Comparison & Main Table Section -->
+    <section class="table-section">
+      <div class="table-panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-badge">JADUAL UTAMA</div>
+            <h2 class="panel-title">Maklumat Denggi Terkini Mengikut Negeri</h2>
+            <p class="panel-subtitle">
+              Disusun mengikut <strong>Jumlah Kes Terkumpul (Urutan Menurun / Highest on Top)</strong>
+            </p>
+          </div>
+
+          <div class="table-actions">
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="table-search" placeholder="Cari negeri (cth: Perak, Selangor)..." />
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="custom-table" id="dengue-table">
+            <thead>
+              <tr>
+                <th class="col-rank">#</th>
+                <th class="col-state" onclick="sortTable('state')">NEGERI <span class="sort-indicator" id="sort-state"></span></th>
+                <th class="col-daily" onclick="sortTable('daily')">KES HARIAN PADA <span id="th-report-date">-</span> <span class="sort-indicator" id="sort-daily"></span></th>
+                <th class="col-cum" onclick="sortTable('cum')">JUMLAH KES TERKUMPUL <span class="sort-indicator active-desc" id="sort-cum">▼</span></th>
+                <th class="col-share">% SUMBANGAN</th>
+                <th class="col-bar">BEBAN KES</th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+              <!-- Rows will be injected by JavaScript -->
+            </tbody>
+            <tfoot>
+              <tr class="total-row" id="table-total-row">
+                <td class="col-rank">★</td>
+                <td class="col-state"><strong>MALAYSIA (JUMLAH KESELURUHAN)</strong></td>
+                <td class="col-daily" id="tf-daily-total"><strong>-</strong></td>
+                <td class="col-cum" id="tf-cum-total"><strong>-</strong></td>
+                <td class="col-share"><strong>100.0%</strong></td>
+                <td class="col-bar">
+                  <div class="full-bar"></div>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div class="table-footer-note">
+          <span>* Sumber: Bilik Gerakan Denggi Kebangsaan CPRC, Kementerian Kesihatan Malaysia (KKM) melalui portal iDengue MYSA.</span>
+          <span id="scraped-timestamp-note">Dikemaskini secara automatik.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        <strong>iDengue Surveillance & Analytics System</strong>
+        <span>Automated Daily Ingestion & Epidemiological Pipeline</span>
+      </div>
+      <div class="footer-right">
+        <span>Public Data Repository: <a href="https://github.com/MohdAzmiSuliman/dailycaseden_iden" target="_blank">MohdAzmiSuliman/dailycaseden_iden</a></span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Data Bundle (Generated by scraper.py for local + online zero-setup execution) -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
