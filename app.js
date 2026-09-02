@@ -59,7 +59,7 @@ async function initData() {
   }
 
   try {
-    const res = await fetch('data/latest.json');
+    const res = await fetch(`data/latest.json?v=${Date.now()}`, { cache: 'no-store' });
     if (res.ok) {
       const latest = await res.json();
       appData = {
