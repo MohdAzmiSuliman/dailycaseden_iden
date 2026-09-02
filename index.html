@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>iDengue Malaysia - Daily & Weekly Surveillance Dashboard</title>
-  <meta name="description" content="Daily and Weekly Epidemiological Dengue Surveillance Dashboard for Malaysia, powered by iDengue MYSA and CPRC KKM." />
+  <title>Malaysia Dengue Count Dashboard</title>
+  <meta name="description" content="Malaysia Dengue Count Dashboard - Bilangan Kes Harian & Mingguan Mengikut Minggu Epidemiologi (ME), bersumberkan data iDengue (MYSA / CPRC KKM)." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -23,13 +23,16 @@
       <div class="header-content">
         <div class="brand-area">
           <div class="brand-icon">🦟</div>
-          <div>
+          <div class="brand-text-container">
             <div class="badge-row">
               <span class="live-pill"><span class="pulse-dot"></span> LIVE SURVEILLANCE</span>
-              <span class="source-tag">Source: iDengue (MYSA / CPRC KKM)</span>
+              <a href="https://idengue.mysa.gov.my/" target="_blank" rel="noopener noreferrer" class="source-tag source-link">
+                Source: iDengue (MYSA / CPRC KKM) ↗
+              </a>
             </div>
-            <h1 class="main-title">iDengue Malaysia Surveillance Dashboard</h1>
-            <p class="subtitle">Laporan Harian & Mingguan Kes Denggi Mengikut Minggu Epidemiologi (ME)</p>
+            <h1 class="main-title">Malaysia Dengue Count Dashboard</h1>
+            <p class="subtitle">Bilangan Kes Harian & Mingguan Mengikut Minggu Epidemiologi (ME)</p>
+            <p class="header-note">Halaman Rasmi iDengue hanya melaporkan jumlah kes harian dan kumulatif. Halaman ini mengambil data yang dilaporkan oleh iDengue, dan memetakan tren kes harian.</p>
           </div>
         </div>
 
@@ -253,7 +256,7 @@
     <!-- Footer -->
     <footer class="app-footer">
       <div class="footer-left">
-        <strong>iDengue Surveillance & Analytics System</strong>
+        <strong>Malaysia Dengue Count Dashboard</strong>
         <span>Automated Daily Ingestion & Epidemiological Pipeline</span>
       </div>
       <div class="footer-right">

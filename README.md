@@ -1,4 +1,4 @@
-# 🦟 iDengue Malaysia Daily Surveillance & Analytics
+# 🦟 Malaysia Dengue Count Dashboard & Surveillance
 
 [![Live Dashboard](https://img.shields.io/badge/🌐_Live_Dashboard-Visit_Website-06B6D4?style=for-the-badge)](https://MohdAzmiSuliman.github.io/dailycaseden_iden/)
 [![Daily Ingestion & Dashboard Update](https://github.com/MohdAzmiSuliman/dailycaseden_iden/actions/workflows/daily_scrape.yml/badge.svg)](https://github.com/MohdAzmiSuliman/dailycaseden_iden/actions/workflows/daily_scrape.yml)
@@ -7,7 +7,9 @@
 
 > 🔗 **Live Surveillance Dashboard**: [https://MohdAzmiSuliman.github.io/dailycaseden_iden/](https://MohdAzmiSuliman.github.io/dailycaseden_iden/)
 
-Automated daily scraper, historical time-series generator, and interactive surveillance dashboard for dengue fever cases in Malaysia, sourced directly from **[iDengue MYSA](https://idengue.mysa.gov.my/index.php)** / **CPRC KKM**.
+Automated daily scraper, historical time-series generator, and interactive surveillance dashboard for dengue fever cases in Malaysia, sourced directly from official **[iDengue MYSA](https://idengue.mysa.gov.my/)** / **CPRC KKM**.
+
+> ℹ️ *Halaman Rasmi iDengue hanya melaporkan jumlah kes harian dan kumulatif. Halaman ini mengambil data yang dilaporkan oleh iDengue, dan memetakan tren kes harian.*
 
 ---
 
