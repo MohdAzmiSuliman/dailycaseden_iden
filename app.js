@@ -117,13 +117,21 @@ function renderHeader() {
   document.getElementById('th-report-date').textContent = lat.report_date_raw || lat.report_date;
 
   if (lat.scraped_at) {
-    const dt = new Date(lat.scraped_at);
+    let dateStr = String(lat.scraped_at).trim();
+    // If it's a naive UTC timestamp from GitHub Actions (e.g. 2026-09-02T03:20:28.687456 without timezone suffix), append 'Z'
+    if (!dateStr.includes('Z') && !dateStr.includes('+') && !dateStr.slice(10).includes('-')) {
+      dateStr += 'Z';
+    }
+    const dt = new Date(dateStr);
+
     const dateFormatted = dt.toLocaleDateString('en-GB', {
+      timeZone: 'Asia/Kuala_Lumpur',
       day: '2-digit',
       month: 'short',
       year: 'numeric'
     });
     const timeFormatted = dt.toLocaleTimeString('en-US', {
+      timeZone: 'Asia/Kuala_Lumpur',
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
@@ -137,7 +145,8 @@ function renderHeader() {
     const timeElem = document.getElementById('hdr-last-updated-time');
     if (timeElem) timeElem.textContent = `Waktu Malaysia (MYT / UTC+8)`;
 
-    document.getElementById('scraped-timestamp-note').textContent = `Auto-ingestion terakhir dijalankan pada: ${fullFormatted} (MYT).`;
+    const noteElem = document.getElementById('scraped-timestamp-note');
+    if (noteElem) noteElem.textContent = `Auto-ingestion terakhir dijalankan pada: ${fullFormatted} (MYT).`;
   }
 }
 

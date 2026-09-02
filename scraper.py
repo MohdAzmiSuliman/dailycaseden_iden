@@ -3,10 +3,11 @@ import re
 import ssl
 import json
 import csv
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import urllib.request
 import urllib.error
 
+MYT = timezone(timedelta(hours=8))
 IDENGUE_URL = "https://idengue.mysa.gov.my/index.php"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
@@ -182,7 +183,7 @@ def parse_idengue(html: str) -> dict:
         "cumulative_start_raw": raw_cum_from,
         "cumulative_end_date": iso_cum_to,
         "cumulative_end_raw": raw_cum_to,
-        "scraped_at": datetime.now().isoformat(),
+        "scraped_at": datetime.now(MYT).isoformat(),
         "states": records,
         "total": {
             "state": "MALAYSIA",
