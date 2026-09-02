@@ -12,6 +12,7 @@ let currentSort = { column: 'cum', order: 'desc' };
 let currentSearch = '';
 let currentGraphMode = 'total'; // 'total' | 'comparison'
 let currentComparisonMetric = 'cumulative'; // 'cumulative' | 'daily'
+let selectedComparisonStates = new Set(); // Multi-state selection for comparison mode
 let weeklyChart = null;
 let dailyChart = null;
 let stateComparisonChart = null;
@@ -101,6 +102,8 @@ function initUI() {
       select.appendChild(opt);
     });
   }
+
+  initComparisonStates();
 }
 
 function renderHeader() {
@@ -245,13 +248,114 @@ function sortTable(column) {
   renderTable();
 }
 
+function initComparisonStates() {
+  if (!appData || !appData.latest || !appData.latest.states) return;
+  const sorted = [...appData.latest.states].sort((a, b) => b.cumulative_cases - a.cumulative_cases);
+  // Default to Top 5 states for clear, readable comparison
+  selectedComparisonStates = new Set(sorted.slice(0, 5).map(s => s.state));
+  renderStateChips();
+}
+
+function renderStateChips() {
+  const container = document.getElementById('state-chips-container');
+  if (!container || !appData || !appData.latest) return;
+
+  const states = [...appData.latest.states].sort((a, b) => b.cumulative_cases - a.cumulative_cases);
+  container.innerHTML = '';
+
+  states.forEach(s => {
+    const isSelected = selectedComparisonStates.has(s.state);
+    const color = STATE_COLORS[s.state] || '#06B6D4';
+
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = `state-chip ${isSelected ? 'active' : ''}`;
+    chip.dataset.state = s.state;
+    chip.style.setProperty('--chip-color', color);
+    chip.onclick = () => toggleStateSelection(s.state);
+
+    chip.innerHTML = `
+      <span class="chip-dot" style="background-color: ${color}"></span>
+      <span class="chip-name">${s.state}</span>
+      <span class="chip-count">(${Number(s.cumulative_cases).toLocaleString()})</span>
+      <span class="chip-check">${isSelected ? '✓' : '+'}</span>
+    `;
+    container.appendChild(chip);
+  });
+
+  const countBadge = document.getElementById('selected-states-count-badge');
+  if (countBadge) {
+    countBadge.textContent = `${selectedComparisonStates.size} daripada ${states.length} Negeri Dipilih`;
+  }
+
+  // Update active state on preset buttons
+  const isTop3 = selectedComparisonStates.size === 3 && states.slice(0, 3).every(s => selectedComparisonStates.has(s.state));
+  const isTop5 = selectedComparisonStates.size === 5 && states.slice(0, 5).every(s => selectedComparisonStates.has(s.state));
+  const isAll = selectedComparisonStates.size === states.length;
+
+  document.getElementById('btn-preset-top3')?.classList.toggle('active', isTop3);
+  document.getElementById('btn-preset-top5')?.classList.toggle('active', isTop5);
+  document.getElementById('btn-preset-all')?.classList.toggle('active', isAll);
+  document.getElementById('btn-preset-clear')?.classList.toggle('active', selectedComparisonStates.size === 1);
+}
+
+function toggleStateSelection(stateName) {
+  if (selectedComparisonStates.has(stateName)) {
+    if (selectedComparisonStates.size <= 1) {
+      // Keep at least 1 state selected
+      return;
+    }
+    selectedComparisonStates.delete(stateName);
+  } else {
+    selectedComparisonStates.add(stateName);
+  }
+  renderStateChips();
+  updateCharts('MALAYSIA');
+  renderStateComparisonChart();
+}
+
+function applyStatePreset(preset) {
+  if (!appData || !appData.latest) return;
+  const sorted = [...appData.latest.states].sort((a, b) => b.cumulative_cases - a.cumulative_cases);
+
+  if (preset === 'top3') {
+    selectedComparisonStates = new Set(sorted.slice(0, 3).map(s => s.state));
+  } else if (preset === 'top5') {
+    selectedComparisonStates = new Set(sorted.slice(0, 5).map(s => s.state));
+  } else if (preset === 'all') {
+    selectedComparisonStates = new Set(sorted.map(s => s.state));
+  } else if (preset === 'clear') {
+    // Keep top 1 state
+    selectedComparisonStates = new Set([sorted[0].state]);
+  }
+  renderStateChips();
+  updateCharts('MALAYSIA');
+  renderStateComparisonChart();
+}
+
 function setGraphMode(mode) {
   currentGraphMode = mode;
   document.getElementById('btn-mode-total').classList.toggle('active', mode === 'total');
   document.getElementById('btn-mode-compare').classList.toggle('active', mode === 'comparison');
 
+  const multiPanel = document.getElementById('multi-state-filter-panel');
+  const singleWrapper = document.getElementById('single-state-wrapper');
+
+  if (mode === 'comparison') {
+    if (multiPanel) multiPanel.style.display = 'block';
+    if (singleWrapper) singleWrapper.style.display = 'none';
+    if (!selectedComparisonStates || selectedComparisonStates.size === 0) {
+      initComparisonStates();
+    }
+    renderStateChips();
+  } else {
+    if (multiPanel) multiPanel.style.display = 'none';
+    if (singleWrapper) singleWrapper.style.display = 'flex';
+  }
+
   const selectedState = document.getElementById('state-filter-select').value;
   updateCharts(selectedState);
+  renderStateComparisonChart();
 }
 
 function setComparisonMetric(metric) {
@@ -270,7 +374,7 @@ function initCharts() {
 function updateCharts(selectedState) {
   if (typeof Chart === 'undefined' || !appData) return;
 
-  const isCompareMode = (currentGraphMode === 'comparison' && selectedState === 'MALAYSIA');
+  const isCompareMode = (currentGraphMode === 'comparison');
 
   // Update header badges and titles
   const weeklyTag = document.getElementById('weekly-chart-tag');
@@ -279,10 +383,11 @@ function updateCharts(selectedState) {
   const dailyTitle = document.getElementById('daily-chart-title');
 
   if (isCompareMode) {
-    weeklyTag.textContent = 'PERBANDINGAN 15 NEGERI';
-    dailyTag.textContent = 'PERBANDINGAN 15 NEGERI';
-    weeklyTitle.textContent = 'Trend Mingguan Mengikut Negeri (Minggu Epid)';
-    dailyTitle.textContent = 'Trend Harian Mengikut Negeri';
+    const count = selectedComparisonStates ? selectedComparisonStates.size : 0;
+    weeklyTag.textContent = `PERBANDINGAN (${count} NEGERI)`;
+    dailyTag.textContent = `PERBANDINGAN (${count} NEGERI)`;
+    weeklyTitle.textContent = `Trend Mingguan Mengikut ${count} Negeri Pilihan`;
+    dailyTitle.textContent = `Trend Harian Mengikut ${count} Negeri Pilihan`;
   } else {
     weeklyTag.textContent = selectedState === 'MALAYSIA' ? 'JUMLAH KESELURUHAN (TOTAL)' : selectedState;
     dailyTag.textContent = selectedState === 'MALAYSIA' ? 'JUMLAH KESELURUHAN (TOTAL)' : selectedState;
@@ -307,8 +412,11 @@ function renderWeeklyChart(selectedState, isCompareMode) {
   let datasets = [];
 
   if (isCompareMode) {
-    // Multi-state stacked bar chart
-    const states = appData.latest.states.map(s => s.state);
+    // Multi-state stacked bar chart for selected comparison states
+    const states = appData.latest.states
+      .map(s => s.state)
+      .filter(st => selectedComparisonStates.has(st));
+
     datasets = states.map(st => {
       const color = STATE_COLORS[st] || '#06B6D4';
       const data = weekKeys.map(wk => appData.weekly_matrix[wk]?.states[st] || 0);
@@ -391,8 +499,11 @@ function renderDailyChart(selectedState, isCompareMode) {
   let datasets = [];
 
   if (isCompareMode) {
-    // Multi-line chart for each state
-    const states = appData.latest.states.map(s => s.state);
+    // Multi-line chart for selected states
+    const states = appData.latest.states
+      .map(s => s.state)
+      .filter(st => selectedComparisonStates.has(st));
+
     datasets = states.map(st => {
       const color = STATE_COLORS[st] || '#EF4444';
       const data = dateKeys.map(dt => appData.daily_matrix[dt]?.[st] || 0);
@@ -401,7 +512,7 @@ function renderDailyChart(selectedState, isCompareMode) {
         data: data,
         borderColor: color,
         backgroundColor: color,
-        borderWidth: 2,
+        borderWidth: 2.5,
         pointRadius: 4,
         tension: 0.3,
         fill: false
@@ -475,8 +586,14 @@ function renderStateComparisonChart() {
   const isCum = (currentComparisonMetric === 'cumulative');
   const metricKey = isCum ? 'cumulative_cases' : 'daily_cases';
 
+  // Filter to selected comparison states if in comparison mode and not all selected
+  let statesToRender = [...appData.latest.states];
+  if (currentGraphMode === 'comparison' && selectedComparisonStates && selectedComparisonStates.size > 0 && selectedComparisonStates.size < 15) {
+    statesToRender = statesToRender.filter(s => selectedComparisonStates.has(s.state));
+  }
+
   // Sort states descending by selected metric
-  const sortedStates = [...appData.latest.states].sort((a, b) => b[metricKey] - a[metricKey]);
+  const sortedStates = statesToRender.sort((a, b) => b[metricKey] - a[metricKey]);
 
   const labels = sortedStates.map(s => s.state);
   const values = sortedStates.map(s => s[metricKey]);

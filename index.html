@@ -129,7 +129,7 @@
     <!-- Graph Mode Switcher Bar -->
     <section class="graph-toggle-bar">
       <div class="toggle-group-wrapper">
-        <span class="toggle-label">MOD GRAF MALAYSIA:</span>
+        <span class="toggle-label">MOD GRAF:</span>
         <div class="toggle-btn-group" role="group">
           <button id="btn-mode-total" class="toggle-pill active" onclick="setGraphMode('total')">
             <span class="pill-icon">🇲🇾</span> Jumlah Keseluruhan (Total)
@@ -140,11 +140,39 @@
         </div>
       </div>
 
-      <div class="state-select-wrapper">
-        <label for="state-filter-select" class="ctrl-label">Penapis Negeri:</label>
+      <div id="single-state-wrapper" class="state-select-wrapper">
+        <label for="state-filter-select" class="ctrl-label">Penapis Negeri Tunggal:</label>
         <select id="state-filter-select" class="custom-select">
           <option value="MALAYSIA">Semua Negeri (MALAYSIA)</option>
         </select>
+      </div>
+    </section>
+
+    <!-- Multi-State Selection Toolbar (Active during Comparison Mode) -->
+    <section id="multi-state-filter-panel" class="multi-state-panel" style="display: none;">
+      <div class="multi-state-header">
+        <div class="multi-state-title-area">
+          <span class="multi-state-icon">🎯</span>
+          <div>
+            <div class="multi-state-title-row">
+              <span class="multi-state-heading">PILIH NEGERI UNTUK DIBANDINGKAN (MULTI-SELECTION):</span>
+              <span id="selected-states-count-badge" class="selection-count-badge">5 Negeri Dipilih</span>
+            </div>
+            <p class="multi-state-sub">Klik mana-mana negeri di bawah untuk memilih negeri yang ingin dibandingkan dalam graf dan carta ranking.</p>
+          </div>
+        </div>
+
+        <div class="multi-state-presets">
+          <span class="preset-label">Pilihan Pantas:</span>
+          <button type="button" class="preset-btn" id="btn-preset-top3" onclick="applyStatePreset('top3')">Top 3</button>
+          <button type="button" class="preset-btn active" id="btn-preset-top5" onclick="applyStatePreset('top5')">Top 5</button>
+          <button type="button" class="preset-btn" id="btn-preset-all" onclick="applyStatePreset('all')">Pilih Semua (15)</button>
+          <button type="button" class="preset-btn outline" id="btn-preset-clear" onclick="applyStatePreset('clear')">Reset (1)</button>
+        </div>
+      </div>
+
+      <div id="state-chips-container" class="state-chips-grid">
+        <!-- Generated dynamically in app.js -->
       </div>
     </section>
 
