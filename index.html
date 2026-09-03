@@ -230,11 +230,39 @@
             <h2 class="panel-title">Perbandingan Kes Antara 15 Negeri di Malaysia</h2>
             <p class="panel-subtitle">Perbandingan langsung beban kes denggi mengikut setiap negeri (disusun mengikut jumlah kes)</p>
           </div>
-          <div class="bar-metric-toggle">
-            <button class="metric-btn active" id="btn-metric-cum" onclick="setComparisonMetric('cumulative')">Kes Terkumpul</button>
-            <button class="metric-btn" id="btn-metric-daily" onclick="setComparisonMetric('daily')">Kes Harian</button>
+          <div class="panel-controls-cluster">
+            <!-- Metric Toggle (Cumulative vs Daily) -->
+            <div class="bar-metric-toggle">
+              <button class="metric-btn active" id="btn-metric-cum" onclick="setComparisonMetric('cumulative')">Kes Terkumpul</button>
+              <button class="metric-btn" id="btn-metric-daily" onclick="setComparisonMetric('daily')">Kes Harian</button>
+            </div>
+            <!-- Scale Toggle (Normal Linear vs Log Scale) -->
+            <div class="bar-metric-toggle" title="Tukar Skala X-Axis">
+              <button class="metric-btn active" id="btn-scale-linear" onclick="setComparisonScale('linear')">Skala Normal</button>
+              <button class="metric-btn" id="btn-scale-log" onclick="setComparisonScale('logarithmic')">Skala Log (10, 100...)</button>
+            </div>
           </div>
         </div>
+
+        <!-- Interactive Zoom & Truncation Controls -->
+        <div class="zoom-toolbar">
+          <div class="zoom-presets-group">
+            <span class="zoom-label">🔍 Kawalan Zoom (Truncate X-Axis):</span>
+            <button type="button" class="zoom-btn active" id="btn-zoom-all" onclick="applyComparisonZoom('all')">Semua (0 - Maks)</button>
+            <button type="button" class="zoom-btn" id="btn-zoom-500" onclick="applyComparisonZoom(500)">0 - 500</button>
+            <button type="button" class="zoom-btn" id="btn-zoom-1500" onclick="applyComparisonZoom(1500)">0 - 1,500</button>
+            <button type="button" class="zoom-btn" id="btn-zoom-5000" onclick="applyComparisonZoom(5000)">0 - 5,000</button>
+            <button type="button" class="zoom-btn" id="btn-zoom-12000" onclick="applyComparisonZoom(12000)">0 - 12,000</button>
+          </div>
+          <div class="zoom-slider-container">
+            <label for="zoom-range-slider" class="zoom-slider-label">
+              Had Maks: <strong id="zoom-range-display">Semua</strong>
+            </label>
+            <input type="range" id="zoom-range-slider" min="100" max="30000" step="100" value="30000" oninput="onZoomSliderChange(this.value)" />
+            <button type="button" class="zoom-reset-btn" onclick="applyComparisonZoom('all')" title="Reset Zoom ke Saiz Penuh">Reset</button>
+          </div>
+        </div>
+
         <div class="chart-wrapper tall">
           <canvas id="stateComparisonChart"></canvas>
         </div>

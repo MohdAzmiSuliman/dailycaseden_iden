@@ -890,6 +890,134 @@ body {
   gap: 4px;
 }
 
+.panel-controls-cluster {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.zoom-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--input-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.zoom-presets-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.zoom-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.zoom-btn {
+  font-family: var(--font-main);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-highlight);
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.zoom-btn:hover {
+  background: var(--border-subtle);
+  color: var(--text-heading);
+}
+
+.zoom-btn.active {
+  background: var(--accent-cyan-bg);
+  color: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .zoom-btn.active {
+  color: var(--accent-cyan-light);
+}
+
+.zoom-slider-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.zoom-slider-label {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.zoom-slider-label strong {
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+}
+
+[data-theme="dark"] .zoom-slider-label strong {
+  color: var(--accent-cyan-light);
+}
+
+#zoom-range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 140px;
+  height: 6px;
+  background: var(--border-highlight);
+  border-radius: var(--radius-pill);
+  outline: none;
+  cursor: pointer;
+}
+
+#zoom-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  transition: transform 0.1s ease;
+}
+
+#zoom-range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.zoom-reset-btn {
+  font-family: var(--font-main);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px dashed var(--border-highlight);
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.zoom-reset-btn:hover {
+  color: var(--text-heading);
+  border-color: var(--text-secondary);
+}
+
 .metric-btn {
   font-family: var(--font-main);
   font-size: 12px;

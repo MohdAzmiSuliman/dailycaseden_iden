@@ -12,6 +12,8 @@ let currentSort = { column: 'cum', order: 'desc' };
 let currentSearch = '';
 let currentGraphMode = 'total'; // 'total' | 'comparison'
 let currentComparisonMetric = 'cumulative'; // 'cumulative' | 'daily'
+let currentComparisonScale = 'linear'; // 'linear' | 'logarithmic'
+let currentComparisonZoom = 'all'; // 'all' | number (e.g. 500, 1500, 5000, 12000)
 let selectedComparisonStates = new Set(); // Multi-state selection for comparison mode
 let weeklyChart = null;
 let dailyChart = null;
@@ -419,6 +421,66 @@ function setComparisonMetric(metric) {
   renderStateComparisonChart();
 }
 
+function setComparisonScale(scaleType) {
+  currentComparisonScale = scaleType;
+  document.getElementById('btn-scale-linear')?.classList.toggle('active', scaleType === 'linear');
+  document.getElementById('btn-scale-log')?.classList.toggle('active', scaleType === 'logarithmic');
+  renderStateComparisonChart();
+}
+
+function applyComparisonZoom(zoomVal) {
+  currentComparisonZoom = zoomVal;
+
+  const presets = ['all', '500', '1500', '5000', '12000'];
+  presets.forEach(p => {
+    const btn = document.getElementById(`btn-zoom-${p}`);
+    if (btn) {
+      btn.classList.toggle('active', String(zoomVal) === p);
+    }
+  });
+
+  const display = document.getElementById('zoom-range-display');
+  const slider = document.getElementById('zoom-range-slider');
+
+  if (zoomVal === 'all') {
+    if (display) display.textContent = 'Semua (Maks)';
+    if (slider) slider.value = slider.max || 30000;
+  } else {
+    const num = Number(zoomVal);
+    if (display) display.textContent = `0 - ${num.toLocaleString()}`;
+    if (slider) slider.value = num;
+  }
+
+  renderStateComparisonChart();
+}
+
+function onZoomSliderChange(val) {
+  const num = Number(val);
+  const slider = document.getElementById('zoom-range-slider');
+  const maxLimit = slider ? Number(slider.max) : 30000;
+
+  const presets = ['all', '500', '1500', '5000', '12000'];
+  presets.forEach(p => {
+    const btn = document.getElementById(`btn-zoom-${p}`);
+    if (btn) {
+      btn.classList.toggle('active', p !== 'all' && Number(p) === num);
+    }
+  });
+
+  const display = document.getElementById('zoom-range-display');
+  if (num >= maxLimit) {
+    currentComparisonZoom = 'all';
+    if (display) display.textContent = 'Semua (Maks)';
+    document.getElementById('btn-zoom-all')?.classList.add('active');
+  } else {
+    currentComparisonZoom = num;
+    if (display) display.textContent = `0 - ${num.toLocaleString()}`;
+    document.getElementById('btn-zoom-all')?.classList.remove('active');
+  }
+
+  renderStateComparisonChart();
+}
+
 function initCharts() {
   if (typeof Chart === 'undefined' || !appData) return;
   updateCharts('MALAYSIA');
@@ -701,10 +763,69 @@ function renderStateComparisonChart() {
   const sortedStates = statesToRender.sort((a, b) => b[metricKey] - a[metricKey]);
 
   const labels = sortedStates.map(s => s.state);
-  const values = sortedStates.map(s => s[metricKey]);
+  const rawValues = sortedStates.map(s => s[metricKey]);
   const colors = sortedStates.map(s => STATE_COLORS[s.state] || '#06B6D4');
 
+  const maxVal = Math.max(...rawValues, 100);
+  const slider = document.getElementById('zoom-range-slider');
+  if (slider) {
+    slider.max = maxVal;
+    if (currentComparisonZoom === 'all') {
+      slider.value = maxVal;
+    }
+  }
+
+  const isLog = (currentComparisonScale === 'logarithmic');
+  const isZoomed = (currentComparisonZoom !== 'all');
+  const zoomMax = isZoomed ? Number(currentComparisonZoom) : maxVal;
+
   const tc = getChartThemeColors();
+
+  // Configure X Scale
+  let xScaleConfig = {
+    grid: { color: tc.grid },
+    border: { color: tc.border }
+  };
+
+  if (isLog) {
+    // Logarithmic scale with custom marks (10, 50, 100, 200, 400, 1000, 2500, 5000, 10000, 30000)
+    xScaleConfig.type = 'logarithmic';
+    xScaleConfig.min = 1;
+    if (isZoomed) {
+      xScaleConfig.max = zoomMax;
+    }
+    const logTickValues = [10, 50, 100, 200, 400, 1000, 2500, 5000, 10000, 20000, 30000]
+      .filter(v => v <= (isZoomed ? zoomMax * 1.05 : maxVal * 1.5));
+
+    xScaleConfig.afterBuildTicks = (scale) => {
+      scale.ticks = logTickValues.map(v => ({
+        value: v,
+        label: v >= 1000 ? `${v / 1000}k` : String(v)
+      }));
+    };
+    xScaleConfig.ticks = {
+      color: tc.ticks,
+      font: { family: 'JetBrains Mono', size: 11 },
+      callback: function(value) {
+        return value >= 1000 ? `${value / 1000}k` : value;
+      }
+    };
+  } else {
+    // Normal Linear scale (with zoom/truncation support)
+    xScaleConfig.type = 'linear';
+    xScaleConfig.beginAtZero = true;
+    xScaleConfig.min = 0;
+    if (isZoomed) {
+      xScaleConfig.max = zoomMax;
+    }
+    xScaleConfig.ticks = {
+      color: tc.ticks,
+      font: { family: 'JetBrains Mono', size: 11 },
+      callback: function(value) {
+        return Number(value).toLocaleString();
+      }
+    };
+  }
 
   stateComparisonChart = new Chart(ctx, {
     type: 'bar',
@@ -712,11 +833,12 @@ function renderStateComparisonChart() {
       labels: labels,
       datasets: [{
         label: isCum ? 'Jumlah Kes Terkumpul (YTD)' : 'Jumlah Kes Harian Terkini',
-        data: values,
+        data: rawValues,
         backgroundColor: colors.map(c => c + 'CC'),
         borderColor: colors,
         borderWidth: 1.5,
         borderRadius: 4,
+        clip: true // Cleanly truncate/cut off bar lengths at the max zoom boundary
       }]
     },
     options: {
@@ -735,19 +857,22 @@ function renderStateComparisonChart() {
           callbacks: {
             label: function(context) {
               const totalVal = isCum ? appData.latest.total.cumulative_cases : appData.latest.total.daily_cases;
-              const pct = totalVal > 0 ? ((context.parsed.x / totalVal) * 100).toFixed(2) : 0;
-              return `${Number(context.parsed.x).toLocaleString()} kes (${pct}% dari Malaysia)`;
+              const actualVal = rawValues[context.dataIndex];
+              const pct = totalVal > 0 ? ((actualVal / totalVal) * 100).toFixed(2) : 0;
+
+              if (isZoomed && actualVal > zoomMax) {
+                return [
+                  `${Number(actualVal).toLocaleString()} kes (${pct}% dari Malaysia)`,
+                  `✂️ Melebihi had zoom (Terpotong pada ${Number(zoomMax).toLocaleString()})`
+                ];
+              }
+              return `${Number(actualVal).toLocaleString()} kes (${pct}% dari Malaysia)`;
             }
           }
         }
       },
       scales: {
-        x: {
-          beginAtZero: true,
-          ticks: { color: tc.ticks, font: { family: 'JetBrains Mono', size: 11 } },
-          grid: { color: tc.grid },
-          border: { color: tc.border }
-        },
+        x: xScaleConfig,
         y: {
           ticks: { color: tc.stateTicks, font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' } },
           grid: { display: false },
