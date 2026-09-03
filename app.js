@@ -69,7 +69,7 @@ const TRANSLATIONS = {
     kpi_top_pct_suffix: 'daripada jumlah Malaysia',
     kpi_ir_title: 'KADAR INSIDEN KEBANGSAAN',
     kpi_ir_badge: 'Per 100k',
-    kpi_ir_desc: 'kes per 100k penduduk (YTD)',
+    kpi_ir_desc: 'kes per 100k penduduk (YTD) • <a href="https://open.dosm.gov.my/" target="_blank" rel="noopener noreferrer" class="source-link">Sumber: DOSM ↗</a>',
     controls_title: '📊 Dashboard Interaktif Denggi Kebangsaan & Negeri',
     btn_download_csv: '📥 Muat Turun CSV',
     btn_download_json: '📦 Muat Turun JSON',
@@ -120,7 +120,8 @@ const TRANSLATIONS = {
     th_share: '% SUMBANGAN',
     th_burden: 'BEBAN KES',
     total_row_label: 'MALAYSIA (JUMLAH KESELURUHAN)',
-    table_source_note: '* Sumber: Bilik Gerakan Denggi Kebangsaan CPRC, Kementerian Kesihatan Malaysia (KKM) melalui portal iDengue MYSA.',
+    table_source_note: '* Sumber Kes: Bilik Gerakan Denggi Kebangsaan CPRC, Kementerian Kesihatan Malaysia (KKM) melalui portal iDengue MYSA.',
+    table_pop_source_note: '* Sumber Anggaran Penduduk (Kadar Insiden): Jabatan Perangkaan Malaysia (DOSM) - <a href="https://open.dosm.gov.my/" target="_blank" rel="noopener noreferrer" class="source-link">OpenDOSM / Anggaran Penduduk Mengikut Negeri ↗</a>.',
     table_auto_update_note: 'Auto-ingestion terakhir dijalankan pada: {date} (MYT).',
     footer_tagline: 'Automated Daily Ingestion & Epidemiological Pipeline',
     footer_repo: 'Public Data Repository:'
@@ -147,7 +148,7 @@ const TRANSLATIONS = {
     kpi_top_pct_suffix: 'of national total',
     kpi_ir_title: 'NATIONAL INCIDENCE RATE',
     kpi_ir_badge: 'Per 100k',
-    kpi_ir_desc: 'cases per 100k population (YTD)',
+    kpi_ir_desc: 'cases per 100k population (YTD) • <a href="https://open.dosm.gov.my/" target="_blank" rel="noopener noreferrer" class="source-link">Source: DOSM ↗</a>',
     controls_title: '📊 Interactive National & State Dengue Surveillance',
     btn_download_csv: '📥 Download CSV',
     btn_download_json: '📦 Download JSON',
@@ -198,7 +199,8 @@ const TRANSLATIONS = {
     th_share: '% SHARE',
     th_burden: 'CASE BURDEN',
     total_row_label: 'MALAYSIA (NATIONAL TOTAL)',
-    table_source_note: '* Source: National CPRC Dengue Operations Room, Ministry of Health Malaysia (MOH) via MYSA iDengue portal.',
+    table_source_note: '* Case Data Source: National CPRC Dengue Operations Room, Ministry of Health Malaysia (MOH) via MYSA iDengue portal.',
+    table_pop_source_note: '* Population Baseline Data (Incidence Rate): Department of Statistics Malaysia (DOSM) - <a href="https://open.dosm.gov.my/" target="_blank" rel="noopener noreferrer" class="source-link">OpenDOSM / State Population Estimates ↗</a>.',
     table_auto_update_note: 'Last automated ingestion run: {date} (MYT).',
     footer_tagline: 'Automated Daily Ingestion & Epidemiological Pipeline',
     footer_repo: 'Public Data Repository:'
@@ -324,7 +326,7 @@ function applyStaticTranslations() {
   setTxt('lbl-kpi-top-title', t.kpi_top_title);
   setTxt('lbl-kpi-ir-title', t.kpi_ir_title);
   setTxt('kpi-ir-badge', t.kpi_ir_badge);
-  setTxt('lbl-kpi-ir-desc', t.kpi_ir_desc);
+  setHtml('lbl-kpi-ir-desc', t.kpi_ir_desc);
 
   setTxt('lbl-controls-title', t.controls_title);
   setTxt('lbl-btn-csv', t.btn_download_csv);
@@ -370,7 +372,8 @@ function applyStaticTranslations() {
   setTxt('th-col-share', t.th_share);
   setTxt('th-col-burden', t.th_burden);
   setTxt('tf-total-label', t.total_row_label);
-  setTxt('lbl-table-source-note', t.table_source_note);
+  setHtml('lbl-table-source-note', t.table_source_note);
+  setHtml('lbl-table-pop-source-note', t.table_pop_source_note);
   setTxt('lbl-footer-tagline', t.footer_tagline);
   setTxt('lbl-footer-repo', t.footer_repo);
 }
