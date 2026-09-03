@@ -13,11 +13,13 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <link rel="stylesheet" href="style.css?v=20260903" />
-  <!-- Immediate Theme Initialization (Default: Light Mode) -->
+  <!-- Immediate Theme & Language Initialization -->
   <script>
     (function() {
       const savedTheme = localStorage.getItem('idengue_theme') || 'light';
       document.documentElement.setAttribute('data-theme', savedTheme);
+      const savedLang = localStorage.getItem('idengue_lang') || 'ms';
+      document.documentElement.setAttribute('data-lang', savedLang);
     })();
   </script>
   <!-- Chart.js for interactive visualizations -->
@@ -32,40 +34,54 @@
           <div class="brand-icon">🦟</div>
           <div class="brand-text-container">
             <div class="badge-row">
-              <span class="live-pill"><span class="pulse-dot"></span> LIVE SURVEILLANCE</span>
-              <a href="https://idengue.mysa.gov.my/" target="_blank" rel="noopener noreferrer" class="source-tag source-link">
+              <span class="live-pill"><span class="pulse-dot"></span> <span id="lbl-live-badge">LIVE SURVEILLANCE</span></span>
+              <a href="https://idengue.mysa.gov.my/" target="_blank" rel="noopener noreferrer" class="source-tag source-link" id="lbl-source-link">
                 Source: iDengue (MYSA / CPRC KKM) ↗
               </a>
-              <div class="theme-switcher-wrapper">
-                <button id="theme-toggle-btn" class="theme-toggle-btn" type="button" aria-label="Toggle Light/Dark Theme" title="Tukar Tema (Cerah / Gelap)">
-                  <span class="theme-btn-option light-opt active" id="theme-opt-light">
-                    <span class="theme-icon">☀️</span> <span class="theme-label">Light</span>
-                  </span>
-                  <span class="theme-btn-option dark-opt" id="theme-opt-dark">
-                    <span class="theme-icon">🌙</span> <span class="theme-label">Dark</span>
-                  </span>
-                </button>
+              <div class="header-toggles-cluster">
+                <!-- Theme Switcher -->
+                <div class="theme-switcher-wrapper">
+                  <button id="theme-toggle-btn" class="theme-toggle-btn" type="button" aria-label="Toggle Light/Dark Theme" title="Tukar Tema (Cerah / Gelap)">
+                    <span class="theme-btn-option light-opt active" id="theme-opt-light">
+                      <span class="theme-icon">☀️</span> <span class="theme-label">Light</span>
+                    </span>
+                    <span class="theme-btn-option dark-opt" id="theme-opt-dark">
+                      <span class="theme-icon">🌙</span> <span class="theme-label">Dark</span>
+                    </span>
+                  </button>
+                </div>
+                <!-- Language Switcher -->
+                <div class="lang-switcher-wrapper">
+                  <button id="lang-toggle-btn" class="lang-toggle-btn" type="button" aria-label="Toggle Language" title="Tukar Bahasa (Bahasa Melayu / English)">
+                    <span class="lang-btn-option active" id="lang-opt-ms">
+                      <span class="lang-flag">🇲🇾</span> <span class="lang-label">BM</span>
+                    </span>
+                    <span class="lang-btn-option" id="lang-opt-en">
+                      <span class="lang-flag">🇬🇧</span> <span class="lang-label">EN</span>
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
-            <h1 class="main-title">Malaysia Dengue Count Dashboard</h1>
-            <p class="subtitle">Bilangan Kes Harian & Mingguan Mengikut Minggu Epidemiologi (ME)</p>
-            <p class="header-note">Halaman Rasmi iDengue hanya melaporkan jumlah kes harian dan kumulatif. Halaman ini mengambil data yang dilaporkan oleh iDengue, dan memetakan tren kes harian.</p>
+            <h1 class="main-title" id="lbl-main-title">Malaysia Dengue Count Dashboard</h1>
+            <p class="subtitle" id="lbl-subtitle">Bilangan Kes Harian & Mingguan Mengikut Minggu Epidemiologi (ME)</p>
+            <p class="header-note" id="lbl-header-note">Halaman Rasmi iDengue hanya melaporkan jumlah kes harian dan kumulatif. Halaman ini mengambil data yang dilaporkan oleh iDengue, dan memetakan tren kes harian.</p>
           </div>
         </div>
 
         <div class="header-meta">
           <div class="meta-card">
-            <div class="meta-label">TARIKH LAPORAN IDENGUE</div>
+            <div class="meta-label" id="lbl-hdr-report-date">TARIKH LAPORAN IDENGUE</div>
             <div class="meta-value" id="hdr-report-date">-</div>
             <div class="meta-sub" id="hdr-cum-period">Kumulatif dari -</div>
           </div>
           <div class="meta-card highlight">
-            <div class="meta-label">MINGGU EPIDEMIOLOGI</div>
+            <div class="meta-label" id="lbl-hdr-epid-week">MINGGU EPIDEMIOLOGI</div>
             <div class="meta-value accent" id="hdr-epid-week">-</div>
             <div class="meta-sub" id="hdr-epid-dates">-</div>
           </div>
           <div class="meta-card updated-card">
-            <div class="meta-label">KEMASKINI TERAKHIR (WORKFLOW)</div>
+            <div class="meta-label" id="lbl-hdr-last-updated">KEMASKINI TERAKHIR (WORKFLOW)</div>
             <div class="meta-value accent-green" id="hdr-last-updated-date">-</div>
             <div class="meta-sub" id="hdr-last-updated-time">Masa Ingestion: -</div>
           </div>
@@ -77,19 +93,19 @@
     <section class="kpi-grid">
       <div class="kpi-card danger-tint">
         <div class="kpi-header">
-          <span class="kpi-title">KES HARIAN (MALAYSIA)</span>
+          <span class="kpi-title" id="lbl-kpi-daily-title">KES HARIAN (MALAYSIA)</span>
           <span class="kpi-icon">📊</span>
         </div>
         <div class="kpi-number" id="kpi-daily-total">-</div>
         <div class="kpi-footer">
           <span class="kpi-badge" id="kpi-daily-badge">Hari Ini</span>
-          <span class="kpi-desc">Jumlah kes baharu dilaporkan</span>
+          <span class="kpi-desc" id="lbl-kpi-daily-desc">Jumlah kes baharu dilaporkan</span>
         </div>
       </div>
 
       <div class="kpi-card primary-tint">
         <div class="kpi-header">
-          <span class="kpi-title">JUMLAH KES TERKUMPUL</span>
+          <span class="kpi-title" id="lbl-kpi-cum-title">JUMLAH KES TERKUMPUL</span>
           <span class="kpi-icon">📈</span>
         </div>
         <div class="kpi-number" id="kpi-cum-total">-</div>
@@ -101,7 +117,7 @@
 
       <div class="kpi-card warning-tint">
         <div class="kpi-header">
-          <span class="kpi-title">NEGERI TERTINGGI (KUMULATIF)</span>
+          <span class="kpi-title" id="lbl-kpi-top-title">NEGERI TERTINGGI (KUMULATIF)</span>
           <span class="kpi-icon">🏆</span>
         </div>
         <div class="kpi-number text-truncate" id="kpi-top-state">-</div>
@@ -113,13 +129,13 @@
 
       <div class="kpi-card info-tint">
         <div class="kpi-header">
-          <span class="kpi-title">STATUS EPIDEMIOLOGI</span>
-          <span class="kpi-icon">🗓️</span>
+          <span class="kpi-title" id="lbl-kpi-ir-title">KADAR INSIDEN KEBANGSAAN</span>
+          <span class="kpi-icon">👥</span>
         </div>
-        <div class="kpi-number" id="kpi-ew-short">-</div>
+        <div class="kpi-number" id="kpi-national-ir">-</div>
         <div class="kpi-footer">
-          <span class="kpi-badge info" id="kpi-ew-badge">Minggu Aktif</span>
-          <span class="kpi-desc" id="kpi-states-count">15 Negeri / Wilayah</span>
+          <span class="kpi-badge info" id="kpi-ir-badge">Per 100k</span>
+          <span class="kpi-desc" id="lbl-kpi-ir-desc">kes per 100k penduduk (YTD)</span>
         </div>
       </div>
     </section>
@@ -127,18 +143,18 @@
     <!-- Controls Bar -->
     <section class="controls-bar">
       <div class="controls-left">
-        <span class="ctrl-label">📊 Dashboard Interaktif Denggi Kebangsaan & Negeri</span>
+        <span class="ctrl-label" id="lbl-controls-title">📊 Dashboard Interaktif Denggi Kebangsaan & Negeri</span>
       </div>
 
       <div class="controls-right">
         <button id="btn-export-csv" class="action-btn secondary">
-          <span>📥 Muat Turun CSV</span>
+          <span id="lbl-btn-csv">📥 Muat Turun CSV</span>
         </button>
         <button id="btn-export-json" class="action-btn secondary">
-          <span>📦 Muat Turun JSON</span>
+          <span id="lbl-btn-json">📦 Muat Turun JSON</span>
         </button>
         <button id="btn-print" class="action-btn primary" onclick="window.print()">
-          <span>🖨️ Cetak / PDF</span>
+          <span id="lbl-btn-print">🖨️ Cetak / PDF</span>
         </button>
       </div>
     </section>
@@ -146,19 +162,19 @@
     <!-- Graph Mode Switcher Bar -->
     <section class="graph-toggle-bar">
       <div class="toggle-group-wrapper">
-        <span class="toggle-label">MOD GRAF:</span>
+        <span class="toggle-label" id="lbl-graph-mode">MOD GRAF:</span>
         <div class="toggle-btn-group" role="group">
           <button id="btn-mode-total" class="toggle-pill active" onclick="setGraphMode('total')">
-            <span class="pill-icon">🇲🇾</span> Jumlah Keseluruhan (Total)
+            <span class="pill-icon">🇲🇾</span> <span id="lbl-mode-total">Jumlah Keseluruhan (Total)</span>
           </button>
           <button id="btn-mode-compare" class="toggle-pill" onclick="setGraphMode('comparison')">
-            <span class="pill-icon">📊</span> Perbandingan Antara Negeri (State Comparison)
+            <span class="pill-icon">📊</span> <span id="lbl-mode-compare">Perbandingan Antara Negeri (State Comparison)</span>
           </button>
         </div>
       </div>
 
       <div id="single-state-wrapper" class="state-select-wrapper">
-        <label for="state-filter-select" class="ctrl-label">Penapis Negeri Tunggal:</label>
+        <label for="state-filter-select" class="ctrl-label" id="lbl-single-state">Penapis Negeri Tunggal:</label>
         <select id="state-filter-select" class="custom-select">
           <option value="MALAYSIA">Semua Negeri (MALAYSIA)</option>
         </select>
@@ -172,17 +188,19 @@
           <span class="multi-state-icon">🎯</span>
           <div>
             <div class="multi-state-title-row">
-              <span class="multi-state-heading">PILIH NEGERI UNTUK DIBANDINGKAN (MULTI-SELECTION):</span>
+              <span class="multi-state-heading" id="lbl-multi-state-heading">PILIH NEGERI UNTUK DIBANDINGKAN (MULTI-SELECTION):</span>
               <span id="selected-states-count-badge" class="selection-count-badge">5 Negeri Dipilih</span>
             </div>
-            <p class="multi-state-sub">Klik mana-mana negeri di bawah untuk memilih negeri yang ingin dibandingkan dalam graf dan carta ranking.</p>
+            <p class="multi-state-sub" id="lbl-multi-state-sub">Klik mana-mana negeri di bawah untuk memilih negeri yang ingin dibandingkan dalam graf dan carta ranking.</p>
           </div>
         </div>
 
         <div class="multi-state-presets">
-          <span class="preset-label">Pilihan Pantas:</span>
+          <span class="preset-label" id="lbl-quick-presets">Pilihan Pantas:</span>
           <button type="button" class="preset-btn" id="btn-preset-top3" onclick="applyStatePreset('top3')">Top 3</button>
           <button type="button" class="preset-btn active" id="btn-preset-top5" onclick="applyStatePreset('top5')">Top 5</button>
+          <button type="button" class="preset-btn" id="btn-preset-bot3" onclick="applyStatePreset('bot3')">Bottom 3</button>
+          <button type="button" class="preset-btn" id="btn-preset-bot5" onclick="applyStatePreset('bot5')">Bottom 5</button>
           <button type="button" class="preset-btn" id="btn-preset-all" onclick="applyStatePreset('all')">Pilih Semua (15)</button>
           <button type="button" class="preset-btn outline" id="btn-preset-clear" onclick="applyStatePreset('clear')">Reset (1)</button>
         </div>
@@ -227,14 +245,15 @@
       <div class="chart-panel full-width" id="state-breakdown-panel">
         <div class="panel-header">
           <div>
-            <h2 class="panel-title">Perbandingan Kes Antara 15 Negeri di Malaysia</h2>
-            <p class="panel-subtitle">Perbandingan langsung beban kes denggi mengikut setiap negeri (disusun mengikut jumlah kes)</p>
+            <h2 class="panel-title" id="lbl-state-chart-title">Perbandingan Kes Antara 15 Negeri di Malaysia</h2>
+            <p class="panel-subtitle" id="lbl-state-chart-subtitle">Perbandingan langsung beban kes denggi mengikut setiap negeri (disusun mengikut jumlah kes)</p>
           </div>
           <div class="panel-controls-cluster">
-            <!-- Metric Toggle (Cumulative vs Daily) -->
+            <!-- Metric Toggle (Cumulative vs Daily vs Incidence Rate) -->
             <div class="bar-metric-toggle">
               <button class="metric-btn active" id="btn-metric-cum" onclick="setComparisonMetric('cumulative')">Kes Terkumpul</button>
               <button class="metric-btn" id="btn-metric-daily" onclick="setComparisonMetric('daily')">Kes Harian</button>
+              <button class="metric-btn" id="btn-metric-ir" onclick="setComparisonMetric('ir')">Kadar Insiden (100k)</button>
             </div>
             <!-- Scale Toggle (Normal Linear vs Log Scale) -->
             <div class="bar-metric-toggle" title="Tukar Skala X-Axis">
@@ -247,7 +266,7 @@
         <!-- Interactive Zoom & Truncation Controls -->
         <div class="zoom-toolbar">
           <div class="zoom-presets-group">
-            <span class="zoom-label">🔍 Kawalan Zoom (Truncate X-Axis):</span>
+            <span class="zoom-label" id="lbl-zoom-heading">🔍 Kawalan Zoom (Truncate X-Axis):</span>
             <button type="button" class="zoom-btn active" id="btn-zoom-all" onclick="applyComparisonZoom('all')">Semua (0 - Maks)</button>
             <button type="button" class="zoom-btn" id="btn-zoom-500" onclick="applyComparisonZoom(500)">0 - 500</button>
             <button type="button" class="zoom-btn" id="btn-zoom-1500" onclick="applyComparisonZoom(1500)">0 - 1,500</button>
@@ -256,10 +275,10 @@
           </div>
           <div class="zoom-slider-container">
             <label for="zoom-range-slider" class="zoom-slider-label">
-              Had Maks: <strong id="zoom-range-display">Semua</strong>
+              <span id="lbl-zoom-max">Had Maks:</span> <strong id="zoom-range-display">Semua</strong>
             </label>
-            <input type="range" id="zoom-range-slider" min="100" max="30000" step="100" value="30000" oninput="onZoomSliderChange(this.value)" />
-            <button type="button" class="zoom-reset-btn" onclick="applyComparisonZoom('all')" title="Reset Zoom ke Saiz Penuh">Reset</button>
+            <input type="range" id="zoom-range-slider" min="10" max="30000" step="10" value="30000" oninput="onZoomSliderChange(this.value)" />
+            <button type="button" class="zoom-reset-btn" id="btn-zoom-reset" onclick="applyComparisonZoom('all')" title="Reset Zoom ke Saiz Penuh">Reset</button>
           </div>
         </div>
 
@@ -274,9 +293,9 @@
       <div class="table-panel">
         <div class="panel-header">
           <div>
-            <div class="panel-badge">JADUAL UTAMA</div>
-            <h2 class="panel-title">Maklumat Denggi Terkini Mengikut Negeri</h2>
-            <p class="panel-subtitle">
+            <div class="panel-badge" id="lbl-table-badge">JADUAL UTAMA</div>
+            <h2 class="panel-title" id="lbl-table-title">Maklumat Denggi Terkini Mengikut Negeri</h2>
+            <p class="panel-subtitle" id="lbl-table-subtitle">
               Disusun mengikut <strong>Jumlah Kes Terkumpul (Urutan Menurun / Highest on Top)</strong>
             </p>
           </div>
@@ -294,11 +313,12 @@
             <thead>
               <tr>
                 <th class="col-rank">#</th>
-                <th class="col-state" onclick="sortTable('state')">NEGERI <span class="sort-indicator" id="sort-state"></span></th>
-                <th class="col-daily" onclick="sortTable('daily')">KES HARIAN PADA <span id="th-report-date">-</span> <span class="sort-indicator" id="sort-daily"></span></th>
-                <th class="col-cum" onclick="sortTable('cum')">JUMLAH KES TERKUMPUL <span class="sort-indicator active-desc" id="sort-cum">▼</span></th>
-                <th class="col-share">% SUMBANGAN</th>
-                <th class="col-bar">BEBAN KES</th>
+                <th class="col-state" onclick="sortTable('state')"><span id="th-col-state">NEGERI</span> <span class="sort-indicator" id="sort-state"></span></th>
+                <th class="col-daily" onclick="sortTable('daily')"><span id="th-col-daily">KES HARIAN</span> <span class="sort-indicator" id="sort-daily"></span></th>
+                <th class="col-cum" onclick="sortTable('cum')"><span id="th-col-cum">JUMLAH KES TERKUMPUL</span> <span class="sort-indicator active-desc" id="sort-cum">▼</span></th>
+                <th class="col-ir" onclick="sortTable('ir')"><span id="th-col-ir">KADAR INSIDEN (PER 100K)</span> <span class="sort-indicator" id="sort-ir"></span></th>
+                <th class="col-share"><span id="th-col-share">% SUMBANGAN</span></th>
+                <th class="col-bar"><span id="th-col-burden">BEBAN KES</span></th>
               </tr>
             </thead>
             <tbody id="table-body">
@@ -307,9 +327,10 @@
             <tfoot>
               <tr class="total-row" id="table-total-row">
                 <td class="col-rank">★</td>
-                <td class="col-state"><strong>MALAYSIA (JUMLAH KESELURUHAN)</strong></td>
+                <td class="col-state"><strong id="tf-total-label">MALAYSIA (JUMLAH KESELURUHAN)</strong></td>
                 <td class="col-daily" id="tf-daily-total"><strong>-</strong></td>
                 <td class="col-cum" id="tf-cum-total"><strong>-</strong></td>
+                <td class="col-ir" id="tf-ir-total"><strong>-</strong></td>
                 <td class="col-share"><strong>100.0%</strong></td>
                 <td class="col-bar">
                   <div class="full-bar"></div>
@@ -320,7 +341,7 @@
         </div>
 
         <div class="table-footer-note">
-          <span>* Sumber: Bilik Gerakan Denggi Kebangsaan CPRC, Kementerian Kesihatan Malaysia (KKM) melalui portal iDengue MYSA.</span>
+          <span id="lbl-table-source-note">* Sumber: Bilik Gerakan Denggi Kebangsaan CPRC, Kementerian Kesihatan Malaysia (KKM) melalui portal iDengue MYSA.</span>
           <span id="scraped-timestamp-note">Dikemaskini secara automatik.</span>
         </div>
       </div>
@@ -330,10 +351,10 @@
     <footer class="app-footer">
       <div class="footer-left">
         <strong>Malaysia Dengue Count Dashboard</strong>
-        <span>Automated Daily Ingestion & Epidemiological Pipeline</span>
+        <span id="lbl-footer-tagline">Automated Daily Ingestion & Epidemiological Pipeline</span>
       </div>
       <div class="footer-right">
-        <span>Public Data Repository: <a href="https://github.com/MohdAzmiSuliman/dailycaseden_iden" target="_blank">MohdAzmiSuliman/dailycaseden_iden</a></span>
+        <span><span id="lbl-footer-repo">Public Data Repository:</span> <a href="https://github.com/MohdAzmiSuliman/dailycaseden_iden" target="_blank">MohdAzmiSuliman/dailycaseden_iden</a></span>
       </div>
     </footer>
   </div>

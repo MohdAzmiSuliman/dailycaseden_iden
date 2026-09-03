@@ -11,13 +11,199 @@ let appData = null;
 let currentSort = { column: 'cum', order: 'desc' };
 let currentSearch = '';
 let currentGraphMode = 'total'; // 'total' | 'comparison'
-let currentComparisonMetric = 'cumulative'; // 'cumulative' | 'daily'
+let currentComparisonMetric = 'cumulative'; // 'cumulative' | 'daily' | 'ir'
 let currentComparisonScale = 'linear'; // 'linear' | 'logarithmic'
 let currentComparisonZoom = 'all'; // 'all' | number (e.g. 500, 1500, 5000, 12000)
+let currentLang = 'ms'; // 'ms' | 'en'
 let selectedComparisonStates = new Set(); // Multi-state selection for comparison mode
 let weeklyChart = null;
 let dailyChart = null;
 let stateComparisonChart = null;
+
+// Official Population Data (DOSM / KKM Demographic Baseline Estimates)
+const STATE_POPULATION = {
+  'SELANGOR': 7214000,
+  'JOHOR': 4101000,
+  'SABAH': 3594000,
+  'PERAK': 2544000,
+  'SARAWAK': 2509000,
+  'KEDAH': 2194000,
+  'KELANTAN': 1860000,
+  'WILAYAH PERSEKUTUAN': 2088000,
+  'PULAU PINANG': 1774000,
+  'PAHANG': 1632000,
+  'NEGERI SEMBILAN': 1222000,
+  'TERENGGANU': 1211000,
+  'MELAKA': 1032000,
+  'PERLIS': 293000,
+  'WILAYAH PERSEKUTUAN LABUAN': 100000,
+  'MALAYSIA': 33568000
+};
+
+function getIncidenceRate(cases, stateName) {
+  const pop = STATE_POPULATION[stateName] || 1;
+  return (cases / pop) * 100000;
+}
+
+// Translations Dictionary (Bahasa Melayu & English)
+const TRANSLATIONS = {
+  ms: {
+    live_badge: 'PENGAWASAN LANGSUNG',
+    source_link: 'Sumber: iDengue (MYSA / CPRC KKM) ↗',
+    main_title: 'Malaysia Dengue Count Dashboard',
+    subtitle: 'Bilangan Kes Harian & Mingguan Mengikut Minggu Epidemiologi (ME)',
+    header_note: 'Halaman Rasmi iDengue hanya melaporkan jumlah kes harian dan kumulatif. Halaman ini mengambil data yang dilaporkan oleh iDengue, dan memetakan tren kes harian.',
+    hdr_report_date_lbl: 'TARIKH LAPORAN IDENGUE',
+    hdr_epid_week_lbl: 'MINGGU EPIDEMIOLOGI',
+    hdr_last_updated_lbl: 'KEMASKINI TERAKHIR (WORKFLOW)',
+    hdr_cum_prefix: 'Kumulatif:',
+    hdr_cum_to: 'hingga',
+    hdr_epid_prefix: 'Takwim ME:',
+    hdr_last_updated_time_sub: 'Waktu Malaysia (MYT / UTC+8)',
+    kpi_daily_title: 'KES HARIAN (MALAYSIA)',
+    kpi_daily_badge: 'Hari Ini',
+    kpi_daily_desc: 'Jumlah kes baharu dilaporkan',
+    kpi_cum_title: 'JUMLAH KES TERKUMPUL',
+    kpi_cum_sub: 'Dari 4 Jan 2026',
+    kpi_top_title: 'NEGERI TERTINGGI (KUMULATIF)',
+    kpi_top_pct_suffix: 'daripada jumlah Malaysia',
+    kpi_ir_title: 'KADAR INSIDEN KEBANGSAAN',
+    kpi_ir_badge: 'Per 100k',
+    kpi_ir_desc: 'kes per 100k penduduk (YTD)',
+    controls_title: '📊 Dashboard Interaktif Denggi Kebangsaan & Negeri',
+    btn_download_csv: '📥 Muat Turun CSV',
+    btn_download_json: '📦 Muat Turun JSON',
+    btn_print: '🖨️ Cetak / PDF',
+    graph_mode_label: 'MOD GRAF:',
+    mode_total_btn: 'Jumlah Keseluruhan (Total)',
+    mode_compare_btn: 'Perbandingan Antara Negeri (State Comparison)',
+    single_state_lbl: 'Penapis Negeri Tunggal:',
+    all_states_opt: 'Semua Negeri (MALAYSIA)',
+    multi_state_heading: 'PILIH NEGERI UNTUK DIBANDINGKAN (MULTI-SELECTION):',
+    multi_state_sub: 'Klik mana-mana negeri di bawah untuk memilih negeri yang ingin dibandingkan dalam graf dan carta ranking.',
+    selected_states_suffix: 'daripada 15 Negeri Dipilih',
+    quick_presets_lbl: 'Pilihan Pantas:',
+    preset_top3: 'Top 3',
+    preset_top5: 'Top 5',
+    preset_bot3: 'Bottom 3',
+    preset_bot5: 'Bottom 5',
+    preset_all: 'Pilih Semua (15)',
+    preset_reset: 'Reset (1)',
+    weekly_title_total: 'Jumlah Keseluruhan Mingguan (Malaysia)',
+    weekly_title_state: 'Trend Mingguan ({state})',
+    weekly_title_compare: 'Trend Mingguan Mengikut {count} Negeri Pilihan',
+    weekly_subtitle: 'Jumlah kes denggi mingguan berdasarkan Takwim Minggu Epid Malaysia',
+    daily_title_total: 'Jumlah Keseluruhan Harian (Malaysia)',
+    daily_title_state: 'Trend Harian ({state})',
+    daily_title_compare: 'Trend Harian Mengikut {count} Negeri Pilihan',
+    daily_subtitle: 'Pergerakan kes denggi harian dari tarikh ke tarikh',
+    state_chart_title: 'Perbandingan Kes Antara 15 Negeri di Malaysia',
+    state_chart_subtitle: 'Perbandingan langsung beban kes denggi mengikut setiap negeri (disusun mengikut jumlah kes)',
+    metric_cum: 'Kes Terkumpul',
+    metric_daily: 'Kes Harian',
+    metric_ir: 'Kadar Insiden (100k)',
+    scale_linear: 'Skala Normal',
+    scale_log: 'Skala Log (10, 100...)',
+    zoom_label: '🔍 Kawalan Zoom (Truncate X-Axis):',
+    zoom_all: 'Semua (0 - Maks)',
+    zoom_max_lbl: 'Had Maks:',
+    zoom_reset: 'Reset',
+    table_badge: 'JADUAL UTAMA',
+    table_title: 'Maklumat Denggi Terkini Mengikut Negeri',
+    table_subtitle: 'Disusun mengikut <strong>Jumlah Kes Terkumpul (Urutan Menurun / Highest on Top)</strong>',
+    search_placeholder: 'Cari negeri (cth: Perak, Selangor)...',
+    th_rank: '#',
+    th_state: 'NEGERI',
+    th_daily: 'KES HARIAN PADA {date}',
+    th_cum: 'JUMLAH KES TERKUMPUL',
+    th_ir: 'KADAR INSIDEN (PER 100K)',
+    th_share: '% SUMBANGAN',
+    th_burden: 'BEBAN KES',
+    total_row_label: 'MALAYSIA (JUMLAH KESELURUHAN)',
+    table_source_note: '* Sumber: Bilik Gerakan Denggi Kebangsaan CPRC, Kementerian Kesihatan Malaysia (KKM) melalui portal iDengue MYSA.',
+    table_auto_update_note: 'Auto-ingestion terakhir dijalankan pada: {date} (MYT).',
+    footer_tagline: 'Automated Daily Ingestion & Epidemiological Pipeline',
+    footer_repo: 'Public Data Repository:'
+  },
+  en: {
+    live_badge: 'LIVE SURVEILLANCE',
+    source_link: 'Source: iDengue (MYSA / CPRC MOH) ↗',
+    main_title: 'Malaysia Dengue Count Dashboard',
+    subtitle: 'Daily & Weekly Dengue Cases by Epidemiological Week (EW)',
+    header_note: 'The official iDengue portal only reports daily and cumulative cases. This platform automatically ingests reported iDengue data and visualizes daily trends.',
+    hdr_report_date_lbl: 'IDENGUE REPORT DATE',
+    hdr_epid_week_lbl: 'EPIDEMIOLOGICAL WEEK',
+    hdr_last_updated_lbl: 'LAST UPDATED (WORKFLOW)',
+    hdr_cum_prefix: 'Cumulative:',
+    hdr_cum_to: 'to',
+    hdr_epid_prefix: 'EW Calendar:',
+    hdr_last_updated_time_sub: 'Malaysia Time (MYT / UTC+8)',
+    kpi_daily_title: 'DAILY CASES (MALAYSIA)',
+    kpi_daily_badge: 'Today',
+    kpi_daily_desc: 'New cases reported today',
+    kpi_cum_title: 'CUMULATIVE CASES',
+    kpi_cum_sub: 'Since 4 Jan 2026',
+    kpi_top_title: 'HIGHEST BURDEN STATE',
+    kpi_top_pct_suffix: 'of national total',
+    kpi_ir_title: 'NATIONAL INCIDENCE RATE',
+    kpi_ir_badge: 'Per 100k',
+    kpi_ir_desc: 'cases per 100k population (YTD)',
+    controls_title: '📊 Interactive National & State Dengue Surveillance',
+    btn_download_csv: '📥 Download CSV',
+    btn_download_json: '📦 Download JSON',
+    btn_print: '🖨️ Print / PDF',
+    graph_mode_label: 'GRAPH MODE:',
+    mode_total_btn: 'National Total',
+    mode_compare_btn: 'State-by-State Comparison',
+    single_state_lbl: 'Single State Filter:',
+    all_states_opt: 'All States (MALAYSIA)',
+    multi_state_heading: 'SELECT STATES TO COMPARE (MULTI-SELECTION):',
+    multi_state_sub: 'Click any state chip below to include or exclude states in the comparison charts and ranking.',
+    selected_states_suffix: 'of 15 States Selected',
+    quick_presets_lbl: 'Quick Presets:',
+    preset_top3: 'Top 3',
+    preset_top5: 'Top 5',
+    preset_bot3: 'Bottom 3',
+    preset_bot5: 'Bottom 5',
+    preset_all: 'Select All (15)',
+    preset_reset: 'Reset (1)',
+    weekly_title_total: 'Weekly Total Cases (Malaysia)',
+    weekly_title_state: 'Weekly Trend ({state})',
+    weekly_title_compare: 'Weekly Trend Across {count} Selected States',
+    weekly_subtitle: 'Weekly dengue case counts aligned with Malaysia Epidemiological Calendar',
+    daily_title_total: 'Daily Total Cases (Malaysia)',
+    daily_title_state: 'Daily Trend ({state})',
+    daily_title_compare: 'Daily Trend Across {count} Selected States',
+    daily_subtitle: 'Daily case trajectory over time',
+    state_chart_title: 'Dengue Case Comparison Across 15 Malaysian States',
+    state_chart_subtitle: 'Direct state burden comparison (sorted by total cases)',
+    metric_cum: 'Cumulative Cases',
+    metric_daily: 'Daily Cases',
+    metric_ir: 'Incidence Rate (100k)',
+    scale_linear: 'Normal Scale',
+    scale_log: 'Log Scale (10, 100...)',
+    zoom_label: '🔍 Zoom Controls (Truncate X-Axis):',
+    zoom_all: 'All (0 - Max)',
+    zoom_max_lbl: 'Max Limit:',
+    zoom_reset: 'Reset',
+    table_badge: 'MAIN SURVEILLANCE TABLE',
+    table_title: 'Latest State-Level Dengue Surveillance Data',
+    table_subtitle: 'Sorted by <strong>Cumulative Cases (Descending / Highest on Top)</strong>',
+    search_placeholder: 'Search state (e.g. Perak, Selangor)...',
+    th_rank: '#',
+    th_state: 'STATE',
+    th_daily: 'DAILY CASES ON {date}',
+    th_cum: 'CUMULATIVE CASES',
+    th_ir: 'INCIDENCE RATE (PER 100K)',
+    th_share: '% SHARE',
+    th_burden: 'CASE BURDEN',
+    total_row_label: 'MALAYSIA (NATIONAL TOTAL)',
+    table_source_note: '* Source: National CPRC Dengue Operations Room, Ministry of Health Malaysia (MOH) via MYSA iDengue portal.',
+    table_auto_update_note: 'Last automated ingestion run: {date} (MYT).',
+    footer_tagline: 'Automated Daily Ingestion & Epidemiological Pipeline',
+    footer_repo: 'Public Data Repository:'
+  }
+};
 
 // Palette for 15 states + Malaysia total
 const STATE_COLORS = {
@@ -47,6 +233,7 @@ const DEFAULT_COLOR_PALETTE = [
 
 document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
+  initLanguage();
   await initData();
   initUI();
   renderHeader();
@@ -77,6 +264,115 @@ function setTheme(theme, reRenderCharts = true) {
     updateCharts(selectedState);
     renderStateComparisonChart();
   }
+}
+
+function initLanguage() {
+  const savedLang = localStorage.getItem('idengue_lang') || 'ms';
+  setLanguage(savedLang, false);
+}
+
+function setLanguage(lang, reRender = true) {
+  currentLang = lang;
+  document.documentElement.setAttribute('data-lang', lang);
+  localStorage.setItem('idengue_lang', lang);
+
+  const msOpt = document.getElementById('lang-opt-ms');
+  const enOpt = document.getElementById('lang-opt-en');
+  if (msOpt && enOpt) {
+    msOpt.classList.toggle('active', lang === 'ms');
+    enOpt.classList.toggle('active', lang === 'en');
+  }
+
+  applyStaticTranslations();
+
+  if (reRender && appData && appData.latest) {
+    renderHeader();
+    renderKPIs();
+    renderStateChips();
+    renderTable();
+    const selectedState = document.getElementById('state-filter-select')?.value || 'MALAYSIA';
+    updateCharts(selectedState);
+    renderStateComparisonChart();
+  }
+}
+
+function applyStaticTranslations() {
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.ms;
+
+  const setTxt = (id, txt) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = txt;
+  };
+  const setHtml = (id, html) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = html;
+  };
+
+  setTxt('lbl-live-badge', t.live_badge);
+  setTxt('lbl-source-link', t.source_link);
+  setTxt('lbl-main-title', t.main_title);
+  setTxt('lbl-subtitle', t.subtitle);
+  setTxt('lbl-header-note', t.header_note);
+  setTxt('lbl-hdr-report-date', t.hdr_report_date_lbl);
+  setTxt('lbl-hdr-epid-week', t.hdr_epid_week_lbl);
+  setTxt('lbl-hdr-last-updated', t.hdr_last_updated_lbl);
+
+  setTxt('lbl-kpi-daily-title', t.kpi_daily_title);
+  setTxt('kpi-daily-badge', t.kpi_daily_badge);
+  setTxt('lbl-kpi-daily-desc', t.kpi_daily_desc);
+  setTxt('lbl-kpi-cum-title', t.kpi_cum_title);
+  setTxt('lbl-kpi-top-title', t.kpi_top_title);
+  setTxt('lbl-kpi-ir-title', t.kpi_ir_title);
+  setTxt('kpi-ir-badge', t.kpi_ir_badge);
+  setTxt('lbl-kpi-ir-desc', t.kpi_ir_desc);
+
+  setTxt('lbl-controls-title', t.controls_title);
+  setTxt('lbl-btn-csv', t.btn_download_csv);
+  setTxt('lbl-btn-json', t.btn_download_json);
+  setTxt('lbl-btn-print', t.btn_print);
+
+  setTxt('lbl-graph-mode', t.graph_mode_label);
+  setTxt('lbl-mode-total', t.mode_total_btn);
+  setTxt('lbl-mode-compare', t.mode_compare_btn);
+  setTxt('lbl-single-state', t.single_state_lbl);
+
+  setTxt('lbl-multi-state-heading', t.multi_state_heading);
+  setTxt('lbl-multi-state-sub', t.multi_state_sub);
+  setTxt('lbl-quick-presets', t.quick_presets_lbl);
+  setTxt('btn-preset-top3', t.preset_top3);
+  setTxt('btn-preset-top5', t.preset_top5);
+  setTxt('btn-preset-bot3', t.preset_bot3);
+  setTxt('btn-preset-bot5', t.preset_bot5);
+  setTxt('btn-preset-all', t.preset_all);
+  setTxt('btn-preset-clear', t.preset_reset);
+
+  setTxt('lbl-state-chart-title', t.state_chart_title);
+  setTxt('lbl-state-chart-subtitle', t.state_chart_subtitle);
+  setTxt('btn-metric-cum', t.metric_cum);
+  setTxt('btn-metric-daily', t.metric_daily);
+  setTxt('btn-metric-ir', t.metric_ir);
+  setTxt('btn-scale-linear', t.scale_linear);
+  setTxt('btn-scale-log', t.scale_log);
+  setTxt('lbl-zoom-heading', t.zoom_label);
+  setTxt('btn-zoom-all', t.zoom_all);
+  setTxt('lbl-zoom-max', t.zoom_max_lbl);
+  setTxt('btn-zoom-reset', t.zoom_reset);
+
+  setTxt('lbl-table-badge', t.table_badge);
+  setTxt('lbl-table-title', t.table_title);
+  setHtml('lbl-table-subtitle', t.table_subtitle);
+  const searchInput = document.getElementById('table-search');
+  if (searchInput) searchInput.placeholder = t.search_placeholder;
+
+  setTxt('th-col-state', t.th_state);
+  setTxt('th-col-cum', t.th_cum);
+  setTxt('th-col-ir', t.th_ir);
+  setTxt('th-col-share', t.th_share);
+  setTxt('th-col-burden', t.th_burden);
+  setTxt('tf-total-label', t.total_row_label);
+  setTxt('lbl-table-source-note', t.table_source_note);
+  setTxt('lbl-footer-tagline', t.footer_tagline);
+  setTxt('lbl-footer-repo', t.footer_repo);
 }
 
 function getChartThemeColors() {
@@ -156,22 +452,28 @@ function initUI() {
 function renderHeader() {
   if (!appData || !appData.latest) return;
   const lat = appData.latest;
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.ms;
 
   document.getElementById('hdr-report-date').textContent = lat.report_date_raw || lat.report_date;
-  document.getElementById('hdr-cum-period').textContent = `Kumulatif: ${lat.cumulative_start_raw || lat.cumulative_start_date} hingga ${lat.cumulative_end_raw || lat.cumulative_end_date}`;
+  document.getElementById('hdr-cum-period').textContent = `${t.hdr_cum_prefix} ${lat.cumulative_start_raw || lat.cumulative_start_date} ${t.hdr_cum_to} ${lat.cumulative_end_raw || lat.cumulative_end_date}`;
   document.getElementById('hdr-epid-week').textContent = lat.epid_week_label || `ME ${lat.epid_week}/${lat.epid_year}`;
-  document.getElementById('hdr-epid-dates').textContent = `Takwim ME: ${lat.epid_week_start} hingga ${lat.epid_week_end}`;
-  document.getElementById('th-report-date').textContent = lat.report_date_raw || lat.report_date;
+  document.getElementById('hdr-epid-dates').textContent = `${t.hdr_epid_prefix} ${lat.epid_week_start} ${t.hdr_cum_to} ${lat.epid_week_end}`;
+  const thReportDate = document.getElementById('th-report-date');
+  if (thReportDate) thReportDate.textContent = lat.report_date_raw || lat.report_date;
+
+  const thDaily = document.getElementById('th-col-daily');
+  if (thDaily) {
+    thDaily.textContent = t.th_daily.replace('{date}', lat.report_date_raw || lat.report_date);
+  }
 
   if (lat.scraped_at) {
     let dateStr = String(lat.scraped_at).trim();
-    // If it's a naive UTC timestamp from GitHub Actions (e.g. 2026-09-02T03:20:28.687456 without timezone suffix), append 'Z'
     if (!dateStr.includes('Z') && !dateStr.includes('+') && !dateStr.slice(10).includes('-')) {
       dateStr += 'Z';
     }
     const dt = new Date(dateStr);
 
-    const dateFormatted = dt.toLocaleDateString('en-GB', {
+    const dateFormatted = dt.toLocaleDateString(currentLang === 'en' ? 'en-MY' : 'ms-MY', {
       timeZone: 'Asia/Kuala_Lumpur',
       day: '2-digit',
       month: 'short',
@@ -190,10 +492,10 @@ function renderHeader() {
     if (dateElem) dateElem.textContent = fullFormatted;
 
     const timeElem = document.getElementById('hdr-last-updated-time');
-    if (timeElem) timeElem.textContent = `Waktu Malaysia (MYT / UTC+8)`;
+    if (timeElem) timeElem.textContent = t.hdr_last_updated_time_sub;
 
     const noteElem = document.getElementById('scraped-timestamp-note');
-    if (noteElem) noteElem.textContent = `Auto-ingestion terakhir dijalankan pada: ${fullFormatted} (MYT).`;
+    if (noteElem) noteElem.textContent = t.table_auto_update_note.replace('{date}', `${fullFormatted} (MYT)`);
   }
 }
 
@@ -201,10 +503,11 @@ function renderKPIs() {
   if (!appData || !appData.latest) return;
   const lat = appData.latest;
   const total = lat.total;
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.ms;
 
   document.getElementById('kpi-daily-total').textContent = Number(total.daily_cases).toLocaleString();
   document.getElementById('kpi-cum-total').textContent = Number(total.cumulative_cases).toLocaleString();
-  document.getElementById('kpi-cum-sub').textContent = `Dari ${lat.cumulative_start_raw || '4 Jan 2026'}`;
+  document.getElementById('kpi-cum-sub').textContent = `${currentLang === 'en' ? 'Since' : 'Dari'} ${lat.cumulative_start_raw || '4 Jan 2026'}`;
 
   const sortedByCum = [...lat.states].sort((a, b) => b.cumulative_cases - a.cumulative_cases);
   const top = sortedByCum[0];
@@ -212,11 +515,15 @@ function renderKPIs() {
     const pct = ((top.cumulative_cases / total.cumulative_cases) * 100).toFixed(1);
     document.getElementById('kpi-top-state').textContent = top.state;
     document.getElementById('kpi-top-cases').textContent = `${Number(top.cumulative_cases).toLocaleString()} kes`;
-    document.getElementById('kpi-top-percent').textContent = `${pct}% daripada jumlah Malaysia`;
+    document.getElementById('kpi-top-percent').textContent = `${pct}% ${t.kpi_top_pct_suffix}`;
   }
 
-  document.getElementById('kpi-ew-short').textContent = `ME ${lat.epid_week} (${lat.epid_year})`;
-  document.getElementById('kpi-states-count').textContent = `${lat.states.length} Negeri / Wilayah`;
+  // National Incidence Rate (per 100k)
+  const nationalIR = getIncidenceRate(total.cumulative_cases, 'MALAYSIA');
+  const nationalIRElem = document.getElementById('kpi-national-ir');
+  if (nationalIRElem) {
+    nationalIRElem.textContent = nationalIR.toFixed(1);
+  }
 }
 
 function renderTable() {
@@ -233,8 +540,12 @@ function renderTable() {
   }
 
   rows.sort((a, b) => {
-    let vA = a[currentSort.column === 'cum' ? 'cumulative_cases' : currentSort.column === 'daily' ? 'daily_cases' : 'state'];
-    let vB = b[currentSort.column === 'cum' ? 'cumulative_cases' : currentSort.column === 'daily' ? 'daily_cases' : 'state'];
+    let vA = currentSort.column === 'cum' ? a.cumulative_cases :
+             currentSort.column === 'daily' ? a.daily_cases :
+             currentSort.column === 'ir' ? getIncidenceRate(a.cumulative_cases, a.state) : a.state;
+    let vB = currentSort.column === 'cum' ? b.cumulative_cases :
+             currentSort.column === 'daily' ? b.daily_cases :
+             currentSort.column === 'ir' ? getIncidenceRate(b.cumulative_cases, b.state) : b.state;
 
     if (typeof vA === 'string') {
       return currentSort.order === 'asc' ? vA.localeCompare(vB) : vB.localeCompare(vA);
@@ -249,6 +560,9 @@ function renderTable() {
     const tr = document.createElement('tr');
     const pct = ((row.cumulative_cases / totalCum) * 100).toFixed(2);
     const barWidth = Math.max(2, (row.cumulative_cases / maxCum) * 100).toFixed(1);
+    const ir = getIncidenceRate(row.cumulative_cases, row.state);
+
+    let irClass = ir >= 400 ? 'critical-ir' : ir >= 250 ? 'high-ir' : '';
 
     let rankClass = '';
     if (idx === 0) rankClass = 'rank-1';
@@ -266,6 +580,9 @@ function renderTable() {
         </span>
       </td>
       <td class="col-cum">${Number(row.cumulative_cases).toLocaleString()}</td>
+      <td class="col-ir">
+        <span class="ir-pill ${irClass}">${ir.toFixed(1)}</span>
+      </td>
       <td class="col-share">${pct}%</td>
       <td class="col-bar">
         <div class="burden-bar-bg">
@@ -276,8 +593,11 @@ function renderTable() {
     tbody.appendChild(tr);
   });
 
+  const nationalIR = getIncidenceRate(lat.total.cumulative_cases, 'MALAYSIA');
   document.getElementById('tf-daily-total').innerHTML = `<strong>${Number(lat.total.daily_cases).toLocaleString()}</strong>`;
   document.getElementById('tf-cum-total').innerHTML = `<strong>${Number(lat.total.cumulative_cases).toLocaleString()}</strong>`;
+  const tfIr = document.getElementById('tf-ir-total');
+  if (tfIr) tfIr.innerHTML = `<strong>${nationalIR.toFixed(1)}</strong>`;
 }
 
 function sortTable(column) {
@@ -288,7 +608,7 @@ function sortTable(column) {
     currentSort.order = column === 'state' ? 'asc' : 'desc';
   }
 
-  ['state', 'daily', 'cum'].forEach(c => {
+  ['state', 'daily', 'cum', 'ir'].forEach(c => {
     const el = document.getElementById(`sort-${c}`);
     if (el) {
       if (c === currentSort.column) {
@@ -341,16 +661,21 @@ function renderStateChips() {
 
   const countBadge = document.getElementById('selected-states-count-badge');
   if (countBadge) {
-    countBadge.textContent = `${selectedComparisonStates.size} daripada ${states.length} Negeri Dipilih`;
+    const t = TRANSLATIONS[currentLang] || TRANSLATIONS.ms;
+    countBadge.textContent = `${selectedComparisonStates.size} ${t.selected_states_suffix}`;
   }
 
   // Update active state on preset buttons
   const isTop3 = selectedComparisonStates.size === 3 && states.slice(0, 3).every(s => selectedComparisonStates.has(s.state));
   const isTop5 = selectedComparisonStates.size === 5 && states.slice(0, 5).every(s => selectedComparisonStates.has(s.state));
+  const isBot3 = selectedComparisonStates.size === 3 && states.slice(-3).every(s => selectedComparisonStates.has(s.state));
+  const isBot5 = selectedComparisonStates.size === 5 && states.slice(-5).every(s => selectedComparisonStates.has(s.state));
   const isAll = selectedComparisonStates.size === states.length;
 
   document.getElementById('btn-preset-top3')?.classList.toggle('active', isTop3);
   document.getElementById('btn-preset-top5')?.classList.toggle('active', isTop5);
+  document.getElementById('btn-preset-bot3')?.classList.toggle('active', isBot3);
+  document.getElementById('btn-preset-bot5')?.classList.toggle('active', isBot5);
   document.getElementById('btn-preset-all')?.classList.toggle('active', isAll);
   document.getElementById('btn-preset-clear')?.classList.toggle('active', selectedComparisonStates.size === 1);
 }
@@ -378,6 +703,10 @@ function applyStatePreset(preset) {
     selectedComparisonStates = new Set(sorted.slice(0, 3).map(s => s.state));
   } else if (preset === 'top5') {
     selectedComparisonStates = new Set(sorted.slice(0, 5).map(s => s.state));
+  } else if (preset === 'bot3') {
+    selectedComparisonStates = new Set(sorted.slice(-3).map(s => s.state));
+  } else if (preset === 'bot5') {
+    selectedComparisonStates = new Set(sorted.slice(-5).map(s => s.state));
   } else if (preset === 'all') {
     selectedComparisonStates = new Set(sorted.map(s => s.state));
   } else if (preset === 'clear') {
@@ -418,6 +747,7 @@ function setComparisonMetric(metric) {
   currentComparisonMetric = metric;
   document.getElementById('btn-metric-cum').classList.toggle('active', metric === 'cumulative');
   document.getElementById('btn-metric-daily').classList.toggle('active', metric === 'daily');
+  document.getElementById('btn-metric-ir').classList.toggle('active', metric === 'ir');
   renderStateComparisonChart();
 }
 
@@ -443,7 +773,7 @@ function applyComparisonZoom(zoomVal) {
   const slider = document.getElementById('zoom-range-slider');
 
   if (zoomVal === 'all') {
-    if (display) display.textContent = 'Semua (Maks)';
+    if (display) display.textContent = currentLang === 'en' ? 'All (Max)' : 'Semua (Maks)';
     if (slider) slider.value = slider.max || 30000;
   } else {
     const num = Number(zoomVal);
@@ -470,7 +800,7 @@ function onZoomSliderChange(val) {
   const display = document.getElementById('zoom-range-display');
   if (num >= maxLimit) {
     currentComparisonZoom = 'all';
-    if (display) display.textContent = 'Semua (Maks)';
+    if (display) display.textContent = currentLang === 'en' ? 'All (Max)' : 'Semua (Maks)';
     document.getElementById('btn-zoom-all')?.classList.add('active');
   } else {
     currentComparisonZoom = num;
@@ -491,6 +821,7 @@ function updateCharts(selectedState) {
   if (typeof Chart === 'undefined' || !appData) return;
 
   const isCompareMode = (currentGraphMode === 'comparison');
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.ms;
 
   // Update header badges and titles
   const weeklyTag = document.getElementById('weekly-chart-tag');
@@ -500,15 +831,17 @@ function updateCharts(selectedState) {
 
   if (isCompareMode) {
     const count = selectedComparisonStates ? selectedComparisonStates.size : 0;
-    weeklyTag.textContent = `PERBANDINGAN (${count} NEGERI)`;
-    dailyTag.textContent = `PERBANDINGAN (${count} NEGERI)`;
-    weeklyTitle.textContent = `Trend Mingguan Mengikut ${count} Negeri Pilihan`;
-    dailyTitle.textContent = `Trend Harian Mengikut ${count} Negeri Pilihan`;
+    const tagText = currentLang === 'en' ? `COMPARISON (${count} STATES)` : `PERBANDINGAN (${count} NEGERI)`;
+    weeklyTag.textContent = tagText;
+    dailyTag.textContent = tagText;
+    weeklyTitle.textContent = t.weekly_title_compare.replace('{count}', count);
+    dailyTitle.textContent = t.daily_title_compare.replace('{count}', count);
   } else {
-    weeklyTag.textContent = selectedState === 'MALAYSIA' ? 'JUMLAH KESELURUHAN (TOTAL)' : selectedState;
-    dailyTag.textContent = selectedState === 'MALAYSIA' ? 'JUMLAH KESELURUHAN (TOTAL)' : selectedState;
-    weeklyTitle.textContent = selectedState === 'MALAYSIA' ? 'Jumlah Keseluruhan Mingguan (Malaysia)' : `Trend Mingguan (${selectedState})`;
-    dailyTitle.textContent = selectedState === 'MALAYSIA' ? 'Jumlah Keseluruhan Harian (Malaysia)' : `Trend Harian (${selectedState})`;
+    const totalTag = currentLang === 'en' ? 'NATIONAL TOTAL' : 'JUMLAH KESELURUHAN';
+    weeklyTag.textContent = selectedState === 'MALAYSIA' ? totalTag : selectedState;
+    dailyTag.textContent = selectedState === 'MALAYSIA' ? totalTag : selectedState;
+    weeklyTitle.textContent = selectedState === 'MALAYSIA' ? t.weekly_title_total : t.weekly_title_state.replace('{state}', selectedState);
+    dailyTitle.textContent = selectedState === 'MALAYSIA' ? t.daily_title_total : t.daily_title_state.replace('{state}', selectedState);
   }
 
   // 1. Weekly Chart
@@ -522,6 +855,7 @@ function renderWeeklyChart(selectedState, isCompareMode) {
   const weekKeys = appData.weeks || [];
   const weekLabels = weekKeys.map(wk => appData.weekly_matrix[wk]?.label || wk);
   const ctxWeekly = document.getElementById('weeklyTrendChart').getContext('2d');
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.ms;
 
   if (weeklyChart) weeklyChart.destroy();
 
@@ -559,7 +893,7 @@ function renderWeeklyChart(selectedState, isCompareMode) {
     });
 
     datasets = [{
-      label: selectedState === 'MALAYSIA' ? 'Jumlah Kes Mingguan (Malaysia)' : `Kes Mingguan (${selectedState})`,
+      label: selectedState === 'MALAYSIA' ? t.weekly_title_total : `${t.metric_cum} (${selectedState})`,
       data: values,
       backgroundColor: 'rgba(6, 182, 212, 0.65)',
       borderColor: '#06B6D4',
@@ -635,6 +969,7 @@ function renderWeeklyChart(selectedState, isCompareMode) {
 function renderDailyChart(selectedState, isCompareMode) {
   const dateKeys = appData.dates || [];
   const ctxDaily = document.getElementById('dailyTrendChart').getContext('2d');
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.ms;
 
   if (dailyChart) dailyChart.destroy();
 
@@ -671,7 +1006,7 @@ function renderDailyChart(selectedState, isCompareMode) {
     });
 
     datasets = [{
-      label: selectedState === 'MALAYSIA' ? 'Jumlah Kes Harian (Malaysia)' : `Kes Harian (${selectedState})`,
+      label: selectedState === 'MALAYSIA' ? t.daily_title_total : `${t.metric_daily} (${selectedState})`,
       data: values,
       borderColor: '#EF4444',
       backgroundColor: 'rgba(239, 68, 68, 0.15)',
@@ -747,11 +1082,12 @@ function renderDailyChart(selectedState, isCompareMode) {
 function renderStateComparisonChart() {
   if (typeof Chart === 'undefined' || !appData || !appData.latest) return;
   const ctx = document.getElementById('stateComparisonChart').getContext('2d');
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.ms;
 
   if (stateComparisonChart) stateComparisonChart.destroy();
 
+  const isIR = (currentComparisonMetric === 'ir');
   const isCum = (currentComparisonMetric === 'cumulative');
-  const metricKey = isCum ? 'cumulative_cases' : 'daily_cases';
 
   // Filter to selected comparison states if in comparison mode and not all selected
   let statesToRender = [...appData.latest.states];
@@ -760,18 +1096,31 @@ function renderStateComparisonChart() {
   }
 
   // Sort states descending by selected metric
-  const sortedStates = statesToRender.sort((a, b) => b[metricKey] - a[metricKey]);
+  const sortedStates = statesToRender.sort((a, b) => {
+    if (isIR) {
+      return getIncidenceRate(b.cumulative_cases, b.state) - getIncidenceRate(a.cumulative_cases, a.state);
+    }
+    if (isCum) {
+      return b.cumulative_cases - a.cumulative_cases;
+    }
+    return b.daily_cases - a.daily_cases;
+  });
 
   const labels = sortedStates.map(s => s.state);
-  const rawValues = sortedStates.map(s => s[metricKey]);
+  const rawValues = sortedStates.map(s => {
+    if (isIR) {
+      return Number(getIncidenceRate(s.cumulative_cases, s.state).toFixed(1));
+    }
+    return isCum ? s.cumulative_cases : s.daily_cases;
+  });
   const colors = sortedStates.map(s => STATE_COLORS[s.state] || '#06B6D4');
 
-  const maxVal = Math.max(...rawValues, 100);
+  const maxVal = Math.max(...rawValues, 10);
   const slider = document.getElementById('zoom-range-slider');
   if (slider) {
-    slider.max = maxVal;
+    slider.max = Math.ceil(maxVal);
     if (currentComparisonZoom === 'all') {
-      slider.value = maxVal;
+      slider.value = Math.ceil(maxVal);
     }
   }
 
@@ -788,17 +1137,20 @@ function renderStateComparisonChart() {
   };
 
   if (isLog) {
-    // Logarithmic scale with custom marks (10, 50, 100, 200, 400, 1000, 2500, 5000, 10000, 30000)
+    // Logarithmic scale with custom marks
     xScaleConfig.type = 'logarithmic';
-    xScaleConfig.min = 1;
+    xScaleConfig.min = isIR ? 1 : 1;
     if (isZoomed) {
       xScaleConfig.max = zoomMax;
     }
-    const logTickValues = [10, 50, 100, 200, 400, 1000, 2500, 5000, 10000, 20000, 30000]
-      .filter(v => v <= (isZoomed ? zoomMax * 1.05 : maxVal * 1.5));
+    const logTickValues = isIR
+      ? [1, 5, 10, 25, 50, 100, 200, 400, 600, 1000]
+      : [10, 50, 100, 200, 400, 1000, 2500, 5000, 10000, 20000, 30000];
+
+    const filteredLogTicks = logTickValues.filter(v => v <= (isZoomed ? zoomMax * 1.05 : maxVal * 1.5));
 
     xScaleConfig.afterBuildTicks = (scale) => {
-      scale.ticks = logTickValues.map(v => ({
+      scale.ticks = filteredLogTicks.map(v => ({
         value: v,
         label: v >= 1000 ? `${v / 1000}k` : String(v)
       }));
@@ -822,17 +1174,23 @@ function renderStateComparisonChart() {
       color: tc.ticks,
       font: { family: 'JetBrains Mono', size: 11 },
       callback: function(value) {
-        return Number(value).toLocaleString();
+        return isIR ? Number(value).toFixed(0) : Number(value).toLocaleString();
       }
     };
   }
+
+  const datasetLabel = isIR
+    ? `${t.metric_ir} (${currentLang === 'en' ? 'cases per 100k population' : 'kes / 100k penduduk'})`
+    : isCum
+    ? (currentLang === 'en' ? 'Cumulative Cases (YTD)' : 'Jumlah Kes Terkumpul (YTD)')
+    : (currentLang === 'en' ? 'Daily Cases' : 'Jumlah Kes Harian Terkini');
 
   stateComparisonChart = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: labels,
       datasets: [{
-        label: isCum ? 'Jumlah Kes Terkumpul (YTD)' : 'Jumlah Kes Harian Terkini',
+        label: datasetLabel,
         data: rawValues,
         backgroundColor: colors.map(c => c + 'CC'),
         borderColor: colors,
@@ -856,17 +1214,32 @@ function renderStateComparisonChart() {
           padding: 10,
           callbacks: {
             label: function(context) {
-              const totalVal = isCum ? appData.latest.total.cumulative_cases : appData.latest.total.daily_cases;
               const actualVal = rawValues[context.dataIndex];
+              const stateName = sortedStates[context.dataIndex].state;
+
+              if (isIR) {
+                const cumCases = sortedStates[context.dataIndex].cumulative_cases;
+                const pop = STATE_POPULATION[stateName] || 1;
+                const lines = [
+                  `${actualVal} ${currentLang === 'en' ? 'cases / 100k population' : 'kes per 100k penduduk'}`,
+                  `(${Number(cumCases).toLocaleString()} ${currentLang === 'en' ? 'cases' : 'kes'} / ${Number(pop).toLocaleString()} ${currentLang === 'en' ? 'pop.' : 'penduduk'})`
+                ];
+                if (isZoomed && actualVal > zoomMax) {
+                  lines.push(`✂️ ${currentLang === 'en' ? `Truncated at ${zoomMax}` : `Terpotong pada ${zoomMax}`}`);
+                }
+                return lines;
+              }
+
+              const totalVal = isCum ? appData.latest.total.cumulative_cases : appData.latest.total.daily_cases;
               const pct = totalVal > 0 ? ((actualVal / totalVal) * 100).toFixed(2) : 0;
 
               if (isZoomed && actualVal > zoomMax) {
                 return [
-                  `${Number(actualVal).toLocaleString()} kes (${pct}% dari Malaysia)`,
-                  `✂️ Melebihi had zoom (Terpotong pada ${Number(zoomMax).toLocaleString()})`
+                  `${Number(actualVal).toLocaleString()} ${currentLang === 'en' ? 'cases' : 'kes'} (${pct}% ${currentLang === 'en' ? 'of Malaysia' : 'dari Malaysia'})`,
+                  `✂️ ${currentLang === 'en' ? `Exceeds zoom limit (Truncated at ${Number(zoomMax).toLocaleString()})` : `Melebihi had zoom (Terpotong pada ${Number(zoomMax).toLocaleString()})`}`
                 ];
               }
-              return `${Number(actualVal).toLocaleString()} kes (${pct}% dari Malaysia)`;
+              return `${Number(actualVal).toLocaleString()} ${currentLang === 'en' ? 'cases' : 'kes'} (${pct}% ${currentLang === 'en' ? 'of Malaysia' : 'dari Malaysia'})`;
             }
           }
         }
@@ -890,6 +1263,14 @@ function setupEventListeners() {
       const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
       const newTheme = currentTheme === 'light' ? 'dark' : 'light';
       setTheme(newTheme, true);
+    });
+  }
+
+  const langToggleBtn = document.getElementById('lang-toggle-btn');
+  if (langToggleBtn) {
+    langToggleBtn.addEventListener('click', () => {
+      const newLang = currentLang === 'ms' ? 'en' : 'ms';
+      setLanguage(newLang, true);
     });
   }
 
