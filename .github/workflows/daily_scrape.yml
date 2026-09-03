@@ -2,8 +2,9 @@ name: Daily iDengue Scraper & Dashboard Update
 
 on:
   schedule:
-    # Runs everyday at 02:00 UTC (10:00 AM Malaysia Time, UTC+8)
-    - cron: '0 2 * * *'
+    # Runs everyday at 00:15 UTC (8:15 AM Malaysia Time, UTC+8)
+    # Using minute :15 to avoid top-of-the-hour runner queue delays
+    - cron: '15 0 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab
 
 permissions:
