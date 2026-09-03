@@ -486,13 +486,37 @@ function renderWeeklyChart(selectedState, isCompareMode) {
         x: {
           stacked: isCompareMode,
           ticks: { color: '#64748B', font: { family: 'Plus Jakarta Sans', size: 11 } },
-          grid: { color: 'rgba(255, 255, 255, 0.05)' }
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          border: { color: 'rgba(255, 255, 255, 0.1)' }
         },
         y: {
+          position: 'left',
           stacked: isCompareMode,
           beginAtZero: true,
           ticks: { color: '#64748B', font: { family: 'JetBrains Mono', size: 11 } },
-          grid: { color: 'rgba(255, 255, 255, 0.05)' }
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          border: { color: 'rgba(255, 255, 255, 0.1)' }
+        },
+        y1: {
+          position: 'right',
+          stacked: isCompareMode,
+          beginAtZero: true,
+          ticks: { color: '#64748B', font: { family: 'JetBrains Mono', size: 11 } },
+          grid: { drawOnChartArea: false, color: 'rgba(255, 255, 255, 0.05)' },
+          border: { color: 'rgba(255, 255, 255, 0.1)' },
+          afterDataLimits: (scale) => {
+            const y = scale.chart.scales.y;
+            if (y) {
+              scale.min = y.min;
+              scale.max = y.max;
+            }
+          },
+          afterBuildTicks: (scale) => {
+            const y = scale.chart.scales.y;
+            if (y && y.ticks && y.ticks.length > 0) {
+              scale.ticks = y.ticks.map(t => ({ ...t }));
+            }
+          }
         }
       }
     }
@@ -574,12 +598,35 @@ function renderDailyChart(selectedState, isCompareMode) {
       scales: {
         x: {
           ticks: { color: '#64748B', font: { family: 'Plus Jakarta Sans', size: 11 } },
-          grid: { color: 'rgba(255, 255, 255, 0.05)' }
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          border: { color: 'rgba(255, 255, 255, 0.1)' }
         },
         y: {
+          position: 'left',
           beginAtZero: true,
           ticks: { color: '#64748B', font: { family: 'JetBrains Mono', size: 11 } },
-          grid: { color: 'rgba(255, 255, 255, 0.05)' }
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          border: { color: 'rgba(255, 255, 255, 0.1)' }
+        },
+        y1: {
+          position: 'right',
+          beginAtZero: true,
+          ticks: { color: '#64748B', font: { family: 'JetBrains Mono', size: 11 } },
+          grid: { drawOnChartArea: false, color: 'rgba(255, 255, 255, 0.05)' },
+          border: { color: 'rgba(255, 255, 255, 0.1)' },
+          afterDataLimits: (scale) => {
+            const y = scale.chart.scales.y;
+            if (y) {
+              scale.min = y.min;
+              scale.max = y.max;
+            }
+          },
+          afterBuildTicks: (scale) => {
+            const y = scale.chart.scales.y;
+            if (y && y.ticks && y.ticks.length > 0) {
+              scale.ticks = y.ticks.map(t => ({ ...t }));
+            }
+          }
         }
       }
     }
