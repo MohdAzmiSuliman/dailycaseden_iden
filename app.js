@@ -44,6 +44,7 @@ const DEFAULT_COLOR_PALETTE = [
 ];
 
 document.addEventListener('DOMContentLoaded', async () => {
+  initTheme();
   await initData();
   initUI();
   renderHeader();
@@ -52,6 +53,50 @@ document.addEventListener('DOMContentLoaded', async () => {
   initCharts();
   setupEventListeners();
 });
+
+function initTheme() {
+  const currentTheme = localStorage.getItem('idengue_theme') || 'light';
+  setTheme(currentTheme, false);
+}
+
+function setTheme(theme, reRenderCharts = true) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('idengue_theme', theme);
+
+  const lightOpt = document.getElementById('theme-opt-light');
+  const darkOpt = document.getElementById('theme-opt-dark');
+  if (lightOpt && darkOpt) {
+    lightOpt.classList.toggle('active', theme === 'light');
+    darkOpt.classList.toggle('active', theme === 'dark');
+  }
+
+  if (reRenderCharts) {
+    const selectedState = document.getElementById('state-filter-select')?.value || 'MALAYSIA';
+    updateCharts(selectedState);
+    renderStateComparisonChart();
+  }
+}
+
+function getChartThemeColors() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  return {
+    isDark: isDark,
+    ticks: isDark ? '#64748B' : '#475569',
+    stateTicks: isDark ? '#F8FAFC' : '#0F172A',
+    grid: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+    border: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+    legend: isDark ? '#94A3B8' : '#475569',
+    tooltipBg: isDark ? '#1E293B' : '#FFFFFF',
+    tooltipTitle: isDark ? '#F8FAFC' : '#0F172A',
+    tooltipBody: isDark ? '#67E8F9' : '#0284C7',
+    tooltipDailyBody: isDark ? '#F87171' : '#DC2626',
+    tooltipBorder: isDark ? '#334155' : '#CBD5E1',
+    singleWeeklyBarBg: isDark ? 'rgba(6, 182, 212, 0.65)' : 'rgba(2, 132, 199, 0.7)',
+    singleWeeklyBorder: isDark ? '#06B6D4' : '#0284C7',
+    singleDailyLineBg: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(220, 38, 38, 0.12)',
+    singleDailyBorder: isDark ? '#EF4444' : '#DC2626',
+  };
+}
 
 async function initData() {
   if (window.IDENGUE_DATA && window.IDENGUE_DATA.latest) {
@@ -461,6 +506,8 @@ function renderWeeklyChart(selectedState, isCompareMode) {
     }];
   }
 
+  const tc = getChartThemeColors();
+
   weeklyChart = new Chart(ctxWeekly, {
     type: 'bar',
     data: { labels: weekLabels, datasets: datasets },
@@ -471,13 +518,13 @@ function renderWeeklyChart(selectedState, isCompareMode) {
         legend: {
           display: isCompareMode,
           position: 'top',
-          labels: { color: '#94A3B8', boxWidth: 12, font: { family: 'Plus Jakarta Sans', size: 11 } }
+          labels: { color: tc.legend, boxWidth: 12, font: { family: 'Plus Jakarta Sans', size: 11 } }
         },
         tooltip: {
-          backgroundColor: '#1E293B',
-          titleColor: '#F8FAFC',
-          bodyColor: '#67E8F9',
-          borderColor: '#334155',
+          backgroundColor: tc.tooltipBg,
+          titleColor: tc.tooltipTitle,
+          bodyColor: tc.tooltipBody,
+          borderColor: tc.tooltipBorder,
           borderWidth: 1,
           padding: 10,
         }
@@ -485,25 +532,25 @@ function renderWeeklyChart(selectedState, isCompareMode) {
       scales: {
         x: {
           stacked: isCompareMode,
-          ticks: { color: '#64748B', font: { family: 'Plus Jakarta Sans', size: 11 } },
-          grid: { color: 'rgba(255, 255, 255, 0.05)' },
-          border: { color: 'rgba(255, 255, 255, 0.1)' }
+          ticks: { color: tc.ticks, font: { family: 'Plus Jakarta Sans', size: 11 } },
+          grid: { color: tc.grid },
+          border: { color: tc.border }
         },
         y: {
           position: 'left',
           stacked: isCompareMode,
           beginAtZero: true,
-          ticks: { color: '#64748B', font: { family: 'JetBrains Mono', size: 11 } },
-          grid: { color: 'rgba(255, 255, 255, 0.05)' },
-          border: { color: 'rgba(255, 255, 255, 0.1)' }
+          ticks: { color: tc.ticks, font: { family: 'JetBrains Mono', size: 11 } },
+          grid: { color: tc.grid },
+          border: { color: tc.border }
         },
         y1: {
           position: 'right',
           stacked: isCompareMode,
           beginAtZero: true,
-          ticks: { color: '#64748B', font: { family: 'JetBrains Mono', size: 11 } },
-          grid: { drawOnChartArea: false, color: 'rgba(255, 255, 255, 0.05)' },
-          border: { color: 'rgba(255, 255, 255, 0.1)' },
+          ticks: { color: tc.ticks, font: { family: 'JetBrains Mono', size: 11 } },
+          grid: { drawOnChartArea: false, color: tc.grid },
+          border: { color: tc.border },
           afterDataLimits: (scale) => {
             const y = scale.chart.scales.y;
             if (y) {
@@ -574,6 +621,8 @@ function renderDailyChart(selectedState, isCompareMode) {
     }];
   }
 
+  const tc = getChartThemeColors();
+
   dailyChart = new Chart(ctxDaily, {
     type: 'line',
     data: { labels: dateKeys, datasets: datasets },
@@ -584,36 +633,36 @@ function renderDailyChart(selectedState, isCompareMode) {
         legend: {
           display: isCompareMode,
           position: 'top',
-          labels: { color: '#94A3B8', boxWidth: 12, font: { family: 'Plus Jakarta Sans', size: 11 } }
+          labels: { color: tc.legend, boxWidth: 12, font: { family: 'Plus Jakarta Sans', size: 11 } }
         },
         tooltip: {
-          backgroundColor: '#1E293B',
-          titleColor: '#F8FAFC',
-          bodyColor: '#F87171',
-          borderColor: '#334155',
+          backgroundColor: tc.tooltipBg,
+          titleColor: tc.tooltipTitle,
+          bodyColor: tc.tooltipDailyBody,
+          borderColor: tc.tooltipBorder,
           borderWidth: 1,
           padding: 10,
         }
       },
       scales: {
         x: {
-          ticks: { color: '#64748B', font: { family: 'Plus Jakarta Sans', size: 11 } },
-          grid: { color: 'rgba(255, 255, 255, 0.05)' },
-          border: { color: 'rgba(255, 255, 255, 0.1)' }
+          ticks: { color: tc.ticks, font: { family: 'Plus Jakarta Sans', size: 11 } },
+          grid: { color: tc.grid },
+          border: { color: tc.border }
         },
         y: {
           position: 'left',
           beginAtZero: true,
-          ticks: { color: '#64748B', font: { family: 'JetBrains Mono', size: 11 } },
-          grid: { color: 'rgba(255, 255, 255, 0.05)' },
-          border: { color: 'rgba(255, 255, 255, 0.1)' }
+          ticks: { color: tc.ticks, font: { family: 'JetBrains Mono', size: 11 } },
+          grid: { color: tc.grid },
+          border: { color: tc.border }
         },
         y1: {
           position: 'right',
           beginAtZero: true,
-          ticks: { color: '#64748B', font: { family: 'JetBrains Mono', size: 11 } },
-          grid: { drawOnChartArea: false, color: 'rgba(255, 255, 255, 0.05)' },
-          border: { color: 'rgba(255, 255, 255, 0.1)' },
+          ticks: { color: tc.ticks, font: { family: 'JetBrains Mono', size: 11 } },
+          grid: { drawOnChartArea: false, color: tc.grid },
+          border: { color: tc.border },
           afterDataLimits: (scale) => {
             const y = scale.chart.scales.y;
             if (y) {
@@ -655,6 +704,8 @@ function renderStateComparisonChart() {
   const values = sortedStates.map(s => s[metricKey]);
   const colors = sortedStates.map(s => STATE_COLORS[s.state] || '#06B6D4');
 
+  const tc = getChartThemeColors();
+
   stateComparisonChart = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -675,10 +726,10 @@ function renderStateComparisonChart() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#1E293B',
-          titleColor: '#F8FAFC',
-          bodyColor: '#67E8F9',
-          borderColor: '#334155',
+          backgroundColor: tc.tooltipBg,
+          titleColor: tc.tooltipTitle,
+          bodyColor: tc.tooltipBody,
+          borderColor: tc.tooltipBorder,
           borderWidth: 1,
           padding: 10,
           callbacks: {
@@ -693,12 +744,14 @@ function renderStateComparisonChart() {
       scales: {
         x: {
           beginAtZero: true,
-          ticks: { color: '#64748B', font: { family: 'JetBrains Mono', size: 11 } },
-          grid: { color: 'rgba(255, 255, 255, 0.05)' }
+          ticks: { color: tc.ticks, font: { family: 'JetBrains Mono', size: 11 } },
+          grid: { color: tc.grid },
+          border: { color: tc.border }
         },
         y: {
-          ticks: { color: '#F8FAFC', font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' } },
-          grid: { display: false }
+          ticks: { color: tc.stateTicks, font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' } },
+          grid: { display: false },
+          border: { color: tc.border }
         }
       }
     }
@@ -706,6 +759,15 @@ function renderStateComparisonChart() {
 }
 
 function setupEventListeners() {
+  const themeToggleBtn = document.getElementById('theme-toggle-btn');
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+      const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      setTheme(newTheme, true);
+    });
+  }
+
   const select = document.getElementById('state-filter-select');
   if (select) {
     select.addEventListener('change', (e) => {

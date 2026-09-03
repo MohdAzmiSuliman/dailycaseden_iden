@@ -12,7 +12,14 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20260902" />
+  <link rel="stylesheet" href="style.css?v=20260903" />
+  <!-- Immediate Theme Initialization (Default: Light Mode) -->
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('idengue_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
   <!-- Chart.js for interactive visualizations -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -29,6 +36,16 @@
               <a href="https://idengue.mysa.gov.my/" target="_blank" rel="noopener noreferrer" class="source-tag source-link">
                 Source: iDengue (MYSA / CPRC KKM) ↗
               </a>
+              <div class="theme-switcher-wrapper">
+                <button id="theme-toggle-btn" class="theme-toggle-btn" type="button" aria-label="Toggle Light/Dark Theme" title="Tukar Tema (Cerah / Gelap)">
+                  <span class="theme-btn-option light-opt active" id="theme-opt-light">
+                    <span class="theme-icon">☀️</span> <span class="theme-label">Light</span>
+                  </span>
+                  <span class="theme-btn-option dark-opt" id="theme-opt-dark">
+                    <span class="theme-icon">🌙</span> <span class="theme-label">Dark</span>
+                  </span>
+                </button>
+              </div>
             </div>
             <h1 class="main-title">Malaysia Dengue Count Dashboard</h1>
             <p class="subtitle">Bilangan Kes Harian & Mingguan Mengikut Minggu Epidemiologi (ME)</p>
