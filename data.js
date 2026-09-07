@@ -1,82 +1,82 @@
 window.IDENGUE_DATA = {
   "latest": {
-    "report_date": "2026-09-05",
-    "report_date_raw": "05 Sep 2026",
+    "report_date": "2026-09-06",
+    "report_date_raw": "06 Sep 2026",
     "epid_year": 2026,
-    "epid_week": 35,
-    "epid_week_label": "ME 35/2026 (30/08 - 05/09)",
-    "epid_week_start": "2026-08-30",
-    "epid_week_end": "2026-09-05",
+    "epid_week": 36,
+    "epid_week_label": "ME 36/2026 (06/09 - 12/09)",
+    "epid_week_start": "2026-09-06",
+    "epid_week_end": "2026-09-12",
     "cumulative_start_date": "2026-01-04",
     "cumulative_start_raw": "4 Jan 2026",
-    "cumulative_end_date": "2026-09-05",
-    "cumulative_end_raw": "05 Sep 2026",
-    "scraped_at": "2026-09-06T12:38:23.735546+08:00",
+    "cumulative_end_date": "2026-09-06",
+    "cumulative_end_raw": "06 Sep 2026",
+    "scraped_at": "2026-09-07T12:40:58.177697+08:00",
     "states": [
       {
         "state": "SELANGOR",
-        "daily_cases": 132,
-        "cumulative_cases": 27979
+        "daily_cases": 124,
+        "cumulative_cases": 28103
       },
       {
         "state": "WILAYAH PERSEKUTUAN",
-        "daily_cases": 42,
-        "cumulative_cases": 11370
+        "daily_cases": 37,
+        "cumulative_cases": 11407
       },
       {
         "state": "JOHOR",
-        "daily_cases": 87,
-        "cumulative_cases": 10404
+        "daily_cases": 60,
+        "cumulative_cases": 10464
       },
       {
         "state": "NEGERI SEMBILAN",
-        "daily_cases": 28,
-        "cumulative_cases": 4159
+        "daily_cases": 14,
+        "cumulative_cases": 4173
       },
       {
         "state": "SABAH",
-        "daily_cases": 11,
-        "cumulative_cases": 4034
+        "daily_cases": 3,
+        "cumulative_cases": 4037
       },
       {
         "state": "PERAK",
-        "daily_cases": 14,
-        "cumulative_cases": 2007
+        "daily_cases": 15,
+        "cumulative_cases": 2022
       },
       {
         "state": "KELANTAN",
-        "daily_cases": 1,
-        "cumulative_cases": 1449
+        "daily_cases": 6,
+        "cumulative_cases": 1455
       },
       {
         "state": "PULAU PINANG",
-        "daily_cases": 7,
-        "cumulative_cases": 1028
+        "daily_cases": 1,
+        "cumulative_cases": 1029
       },
       {
         "state": "PAHANG",
-        "daily_cases": 5,
+        "daily_cases": 0,
         "cumulative_cases": 757
       },
       {
         "state": "SARAWAK",
-        "daily_cases": 6,
-        "cumulative_cases": 719
+        "daily_cases": 1,
+        "cumulative_cases": 720
       },
       {
         "state": "KEDAH",
-        "daily_cases": 2,
-        "cumulative_cases": 662
+        "daily_cases": 1,
+        "cumulative_cases": 663
       },
       {
         "state": "MELAKA",
-        "daily_cases": 4,
+        "daily_cases": 0,
         "cumulative_cases": 546
       },
       {
         "state": "TERENGGANU",
-        "daily_cases": 3,
-        "cumulative_cases": 285
+        "daily_cases": 5,
+        "cumulative_cases": 290
       },
       {
         "state": "PERLIS",
@@ -91,8 +91,8 @@ window.IDENGUE_DATA = {
     ],
     "total": {
       "state": "MALAYSIA",
-      "daily_cases": 342,
-      "cumulative_cases": 65588
+      "daily_cases": 267,
+      "cumulative_cases": 65855
     }
   },
   "dates": [
@@ -101,7 +101,8 @@ window.IDENGUE_DATA = {
     "2026-09-02",
     "2026-09-03",
     "2026-09-04",
-    "2026-09-05"
+    "2026-09-05",
+    "2026-09-06"
   ],
   "daily_matrix": {
     "2026-08-31": {
@@ -211,10 +212,29 @@ window.IDENGUE_DATA = {
       "PERLIS": 0,
       "WILAYAH PERSEKUTUAN LABUAN": 0,
       "MALAYSIA": 342
+    },
+    "2026-09-06": {
+      "SELANGOR": 124,
+      "WILAYAH PERSEKUTUAN": 37,
+      "JOHOR": 60,
+      "NEGERI SEMBILAN": 14,
+      "SABAH": 3,
+      "PERAK": 15,
+      "KELANTAN": 6,
+      "PULAU PINANG": 1,
+      "PAHANG": 0,
+      "SARAWAK": 1,
+      "KEDAH": 1,
+      "MELAKA": 0,
+      "TERENGGANU": 5,
+      "PERLIS": 0,
+      "WILAYAH PERSEKUTUAN LABUAN": 0,
+      "MALAYSIA": 267
     }
   },
   "weeks": [
-    "2026-W35"
+    "2026-W35",
+    "2026-W36"
   ],
   "weekly_matrix": {
     "2026-W35": {
@@ -238,6 +258,30 @@ window.IDENGUE_DATA = {
         "PERLIS": 2,
         "WILAYAH PERSEKUTUAN LABUAN": 0,
         "MALAYSIA": 1946
+      },
+      "totals": {}
+    },
+    "2026-W36": {
+      "label": "ME 36/2026 (06/09 - 12/09)",
+      "year": 2026,
+      "week": 36,
+      "states": {
+        "SELANGOR": 124,
+        "WILAYAH PERSEKUTUAN": 37,
+        "JOHOR": 60,
+        "NEGERI SEMBILAN": 14,
+        "SABAH": 3,
+        "PERAK": 15,
+        "KELANTAN": 6,
+        "PULAU PINANG": 1,
+        "PAHANG": 0,
+        "SARAWAK": 1,
+        "KEDAH": 1,
+        "MELAKA": 0,
+        "TERENGGANU": 5,
+        "PERLIS": 0,
+        "WILAYAH PERSEKUTUAN LABUAN": 0,
+        "MALAYSIA": 267
       },
       "totals": {}
     }
