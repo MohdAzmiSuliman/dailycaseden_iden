@@ -10,71 +10,71 @@
   "cumulative_start_raw": "4 Jan 2026",
   "cumulative_end_date": "2026-09-10",
   "cumulative_end_raw": "10 Sep 2026",
-  "scraped_at": "2026-09-11T12:39:59.861450+08:00",
+  "scraped_at": "2026-09-12T12:33:47.986620+08:00",
   "states": [
     {
       "state": "SELANGOR",
-      "daily_cases": 157,
+      "daily_cases": 0,
       "cumulative_cases": 28893
     },
     {
       "state": "WILAYAH PERSEKUTUAN",
-      "daily_cases": 41,
+      "daily_cases": 0,
       "cumulative_cases": 11660
     },
     {
       "state": "JOHOR",
-      "daily_cases": 70,
+      "daily_cases": 0,
       "cumulative_cases": 10830
     },
     {
       "state": "NEGERI SEMBILAN",
-      "daily_cases": 26,
+      "daily_cases": 0,
       "cumulative_cases": 4323
     },
     {
       "state": "SABAH",
-      "daily_cases": 21,
+      "daily_cases": 0,
       "cumulative_cases": 4112
     },
     {
       "state": "PERAK",
-      "daily_cases": 14,
+      "daily_cases": 0,
       "cumulative_cases": 2074
     },
     {
       "state": "KELANTAN",
-      "daily_cases": 20,
+      "daily_cases": 0,
       "cumulative_cases": 1538
     },
     {
       "state": "PULAU PINANG",
-      "daily_cases": 5,
+      "daily_cases": 0,
       "cumulative_cases": 1063
     },
     {
       "state": "PAHANG",
-      "daily_cases": 3,
+      "daily_cases": 0,
       "cumulative_cases": 766
     },
     {
       "state": "SARAWAK",
-      "daily_cases": 4,
+      "daily_cases": 0,
       "cumulative_cases": 739
     },
     {
       "state": "KEDAH",
-      "daily_cases": 3,
+      "daily_cases": 0,
       "cumulative_cases": 679
     },
     {
       "state": "MELAKA",
-      "daily_cases": 5,
+      "daily_cases": 0,
       "cumulative_cases": 569
     },
     {
       "state": "TERENGGANU",
-      "daily_cases": 9,
+      "daily_cases": 0,
       "cumulative_cases": 322
     },
     {
@@ -90,7 +90,7 @@
   ],
   "total": {
     "state": "MALAYSIA",
-    "daily_cases": 378,
+    "daily_cases": 0,
     "cumulative_cases": 67758
   }
 }
