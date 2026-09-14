@@ -193,6 +193,116 @@ def parse_idengue(html: str) -> dict:
     }
 
 
+FIELDNAMES = [
+    "date",
+    "epid_year",
+    "epid_week",
+    "epid_week_label",
+    "state",
+    "daily_cases",
+    "cumulative_cases",
+    "cumulative_start_date",
+    "cumulative_end_date",
+    "scraped_at",
+    "data_source",
+]
+
+
+def resolve_1day_gap(existing_rows: list, incoming_data: dict) -> list:
+    """
+    If exactly 1 day is missing between the latest date in existing_rows and
+    incoming_data['report_date'], retrospectively calculate definite figures
+    without estimation:
+      cumulative_{D-1} = cumulative_{D} - daily_{D}
+      daily_{D-1} = cumulative_{D-1} - cumulative_{D-2}
+    Returns a list of generated rows for the missing date (or empty list if no valid gap).
+    """
+    if not existing_rows or not incoming_data.get("report_date"):
+        return []
+
+    try:
+        dt_curr = datetime.strptime(incoming_data["report_date"], "%Y-%m-%d").date()
+    except ValueError:
+        return []
+
+    valid_prev_dates = []
+    for r in existing_rows:
+        try:
+            d = datetime.strptime(r["date"], "%Y-%m-%d").date()
+            if d < dt_curr:
+                valid_prev_dates.append(d)
+        except (ValueError, KeyError):
+            continue
+
+    if not valid_prev_dates:
+        return []
+
+    latest_prev_date = max(valid_prev_dates)
+    day_diff = (dt_curr - latest_prev_date).days
+
+    if day_diff == 2:
+        gap_date = (latest_prev_date + timedelta(days=1)).strftime("%Y-%m-%d")
+        if any(r.get("date") == gap_date for r in existing_rows):
+            return []
+
+        prev_date_str = latest_prev_date.strftime("%Y-%m-%d")
+        prev_rows = [r for r in existing_rows if r.get("date") == prev_date_str]
+        prev_map = {r["state"]: int(r["cumulative_cases"]) for r in prev_rows if "cumulative_cases" in r}
+
+        curr_cum_map = {s["state"]: int(s["cumulative_cases"]) for s in incoming_data["states"]}
+        curr_cum_map["MALAYSIA"] = int(incoming_data["total"]["cumulative_cases"])
+
+        curr_daily_map = {s["state"]: int(s["daily_cases"]) for s in incoming_data["states"]}
+        curr_daily_map["MALAYSIA"] = int(incoming_data["total"]["daily_cases"])
+
+        all_states = [s["state"] for s in incoming_data["states"]] + ["MALAYSIA"]
+        gap_rows = []
+        ew_info = get_epid_week(gap_date)
+
+        for st in all_states:
+            if st not in prev_map or st not in curr_cum_map or st not in curr_daily_map:
+                print(f"[WARN] State '{st}' missing in previous ({prev_date_str}) or current record. Skipping retrospective calculation.")
+                return []
+
+            cum_gap = curr_cum_map[st] - curr_daily_map[st]
+            daily_gap = cum_gap - prev_map[st]
+
+            if daily_gap < 0:
+                print(f"[WARN] Inconsistent negative delta for state '{st}' on gap {gap_date}: {daily_gap}. Skipping retrospective calculation.")
+                return []
+
+            gap_rows.append({
+                "date": gap_date,
+                "epid_year": ew_info["year"],
+                "epid_week": ew_info["week"],
+                "epid_week_label": ew_info["label"],
+                "state": st,
+                "daily_cases": daily_gap,
+                "cumulative_cases": cum_gap,
+                "cumulative_start_date": incoming_data["cumulative_start_date"],
+                "cumulative_end_date": gap_date,
+                "scraped_at": incoming_data["scraped_at"],
+                "data_source": "retrospective_calculation",
+            })
+
+        print(f"-> [GAP RESOLVER] Calculated 1-day gap retrospectively for {gap_date} (Data source: retrospective_calculation).")
+        # Save individual daily CSV for gap_date
+        gap_csv_path = os.path.join(DAILY_DIR, f"{gap_date}.csv")
+        with open(gap_csv_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
+            writer.writeheader()
+            writer.writerows(gap_rows)
+
+        return gap_rows
+
+    elif day_diff > 2:
+        missing_days = day_diff - 1
+        print(f"-> [GAP RESOLVER] Gap of {missing_days} days detected between {latest_prev_date} and {dt_curr} (> 1 day). Skipping retrospective calculation per rule (no estimation).")
+        return []
+
+    return []
+
+
 def save_data(data: dict):
     """Save latest snapshot, daily file, and append to historical CSV."""
     os.makedirs(DAILY_DIR, exist_ok=True)
@@ -205,18 +315,40 @@ def save_data(data: dict):
     ew_week = data["epid_week"]
     ew_label = data["epid_week_label"]
 
-    fieldnames = [
-        "date",
-        "epid_year",
-        "epid_week",
-        "epid_week_label",
-        "state",
-        "daily_cases",
-        "cumulative_cases",
-        "cumulative_start_date",
-        "cumulative_end_date",
-        "scraped_at",
+    # 0. Load existing historical rows
+    existing_rows = []
+    if os.path.exists(HISTORICAL_CSV):
+        with open(HISTORICAL_CSV, "r", newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                # Enrich old row with epid week if missing
+                if not row.get("epid_week"):
+                    ew = get_epid_week(row.get("date"))
+                    row["epid_year"] = ew["year"]
+                    row["epid_week"] = ew["week"]
+                    row["epid_week_label"] = ew["label"]
+                if not row.get("data_source"):
+                    row["data_source"] = "idengue_official"
+                existing_rows.append(row)
+
+    # Guard against zero-overwrite:
+    # If incoming data has 0 daily cases for report_date, but existing record already has > 0 cases,
+    # skip overwriting this date to protect against website reset glitches.
+    incoming_total_daily = int(data["total"]["daily_cases"])
+    existing_same_date_total = [
+        r for r in existing_rows
+        if r.get("date") == report_date and r.get("state") == "MALAYSIA"
     ]
+    if incoming_total_daily == 0 and existing_same_date_total and int(existing_same_date_total[0].get("daily_cases", 0)) > 0:
+        prev_cases = existing_same_date_total[0]["daily_cases"]
+        print(f"-> [PROTECTION ALERT] Incoming report date {report_date} has 0 daily cases, but existing record has {prev_cases} cases.")
+        print(f"-> Preserving verified existing data to prevent reset-glitch overwrite.")
+        return
+
+    # Check and resolve 1-day gap retrospectively if applicable
+    gap_rows = resolve_1day_gap(existing_rows, data)
+    if gap_rows:
+        existing_rows.extend(gap_rows)
 
     all_rows = []
     for s in data["states"]:
@@ -231,6 +363,7 @@ def save_data(data: dict):
             "cumulative_start_date": cum_start,
             "cumulative_end_date": cum_end,
             "scraped_at": scraped_at,
+            "data_source": "idengue_official",
         })
     # Add Malaysia total row
     all_rows.append({
@@ -244,11 +377,12 @@ def save_data(data: dict):
         "cumulative_start_date": cum_start,
         "cumulative_end_date": cum_end,
         "scraped_at": scraped_at,
+        "data_source": "idengue_official",
     })
 
     # 1. Save Latest CSV
     with open(LATEST_CSV, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
         writer.writeheader()
         writer.writerows(all_rows)
 
@@ -259,30 +393,17 @@ def save_data(data: dict):
     # 3. Save Daily Snapshot CSV
     daily_csv_path = os.path.join(DAILY_DIR, f"{report_date}.csv")
     with open(daily_csv_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
         writer.writeheader()
         writer.writerows(all_rows)
 
-    # 4. Append to Historical CSV (Idempotent update)
-    existing_rows = []
-    if os.path.exists(HISTORICAL_CSV):
-        with open(HISTORICAL_CSV, "r", newline="", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if row.get("date") != report_date:
-                    # Enrich old row with epid week if missing
-                    if not row.get("epid_week"):
-                        ew = get_epid_week(row.get("date"))
-                        row["epid_year"] = ew["year"]
-                        row["epid_week"] = ew["week"]
-                        row["epid_week_label"] = ew["label"]
-                    existing_rows.append(row)
-
-    updated_historical = existing_rows + all_rows
+    # 4. Filter out any previous rows for report_date and append new rows (idempotent update)
+    historical_without_curr = [r for r in existing_rows if r.get("date") != report_date]
+    updated_historical = historical_without_curr + all_rows
     updated_historical.sort(key=lambda x: (x["date"], x["state"] == "MALAYSIA", -int(x.get("cumulative_cases") or 0)))
 
     with open(HISTORICAL_CSV, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
         writer.writeheader()
         writer.writerows(updated_historical)
 
@@ -292,7 +413,6 @@ def save_data(data: dict):
 
 def build_dashboard_dataset(historical_rows: list, latest_data: dict):
     """Aggregate historical rows into daily and epid-weekly trends for frontend charts."""
-    # Daily trend per state and total
     daily_map = {} # date -> {state: daily_cases}
     weekly_map = {} # (epid_year, epid_week) -> {state: sum_daily_cases, "label": ...}
 
@@ -321,12 +441,18 @@ def build_dashboard_dataset(historical_rows: list, latest_data: dict):
     sorted_dates = sorted(daily_map.keys())
     sorted_weeks = sorted(weekly_map.keys())
 
+    # Identify any dates that were calculated retrospectively
+    retrospective_dates = sorted(list(set(
+        row["date"] for row in historical_rows if row.get("data_source") == "retrospective_calculation"
+    )))
+
     bundle = {
         "latest": latest_data,
         "dates": sorted_dates,
         "daily_matrix": daily_map,
         "weeks": sorted_weeks,
         "weekly_matrix": weekly_map,
+        "retrospective_dates": retrospective_dates,
     }
 
     # Write as data.js for zero-CORS direct local browser execution (double-click index.html works out of the box!)

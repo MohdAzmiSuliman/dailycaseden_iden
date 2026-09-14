@@ -903,6 +903,46 @@ body {
   height: 380px;
 }
 
+.chart-retro-alert {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.chart-retro-alert .retro-alert-icon {
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.chart-retro-alert .retro-alert-text code {
+  background: rgba(245, 158, 11, 0.15);
+  color: #D97706;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+}
+
+[data-theme="dark"] .chart-retro-alert {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #FDE68A;
+}
+
+[data-theme="dark"] .chart-retro-alert .retro-alert-text code {
+  background: rgba(245, 158, 11, 0.25);
+  color: #FBBF24;
+}
+
 .bar-metric-toggle {
   display: inline-flex;
   background: var(--input-bg);

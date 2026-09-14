@@ -971,6 +971,8 @@ function renderWeeklyChart(selectedState, isCompareMode) {
 
 function renderDailyChart(selectedState, isCompareMode) {
   const dateKeys = appData.dates || [];
+  const retroDates = new Set(appData.retrospective_dates || []);
+  const displayLabels = dateKeys.map(d => retroDates.has(d) ? `${d} *` : d);
   const ctxDaily = document.getElementById('dailyTrendChart').getContext('2d');
   const t = TRANSLATIONS[currentLang] || TRANSLATIONS.ms;
 
@@ -1025,7 +1027,7 @@ function renderDailyChart(selectedState, isCompareMode) {
 
   dailyChart = new Chart(ctxDaily, {
     type: 'line',
-    data: { labels: dateKeys, datasets: datasets },
+    data: { labels: displayLabels, datasets: datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -1042,6 +1044,30 @@ function renderDailyChart(selectedState, isCompareMode) {
           borderColor: tc.tooltipBorder,
           borderWidth: 1,
           padding: 10,
+          callbacks: {
+            title: (items) => {
+              if (!items || !items.length) return '';
+              const idx = items[0].dataIndex;
+              const dt = dateKeys[idx];
+              if (retroDates.has(dt)) {
+                return currentLang === 'en'
+                  ? `${dt} * (Retrospectively Calculated)`
+                  : `${dt} * (Dikira Secara Retrospektif)`;
+              }
+              return dt;
+            },
+            footer: (items) => {
+              if (!items || !items.length) return '';
+              const idx = items[0].dataIndex;
+              const dt = dateKeys[idx];
+              if (retroDates.has(dt)) {
+                return currentLang === 'en'
+                  ? 'ℹ️ Data was calculated retrospectively from cumulative delta (official iDengue bulletin not published for this date).'
+                  : 'ℹ️ Data dikira secara retrospektif daripada perbezaan kumulatif (buletin rasmi iDengue tidak diterbitkan bagi tarikh ini).';
+              }
+              return '';
+            }
+          }
         }
       },
       scales: {
@@ -1080,6 +1106,21 @@ function renderDailyChart(selectedState, isCompareMode) {
       }
     }
   });
+
+  // Update retrospective calculation alert notice
+  const retroAlertEl = document.getElementById('daily-retro-alert');
+  const retroAlertText = document.getElementById('daily-retro-alert-text');
+  if (retroAlertEl && retroAlertText) {
+    if (retroDates.size > 0) {
+      const datesList = Array.from(retroDates).join(', ');
+      retroAlertText.innerHTML = currentLang === 'en'
+        ? `<strong>* Note:</strong> Data for <code>${datesList}</code> was calculated retrospectively from cumulative case delta changes because the official iDengue bulletin was unreleased.`
+        : `<strong>* Perhatian:</strong> Data bagi <code>${datesList}</code> dikira secara retrospektif daripada perbezaan kes kumulatif berikutan ketiadaan buletin rasmi iDengue.`;
+      retroAlertEl.style.display = 'flex';
+    } else {
+      retroAlertEl.style.display = 'none';
+    }
+  }
 }
 
 function renderStateComparisonChart() {
