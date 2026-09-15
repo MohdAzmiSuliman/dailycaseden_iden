@@ -877,12 +877,16 @@ function renderWeeklyChart(selectedState, isCompareMode) {
         label: st,
         data: data,
         backgroundColor: color,
-        borderWidth: 0,
-        stack: 'weekly_stack'
+        borderWidth: 0.5,
+        borderColor: 'rgba(0, 0, 0, 0.1)',
+        borderRadius: 0,
+        stack: 'weekly_stack',
+        categoryPercentage: 1.0,
+        barPercentage: 1.0,
       };
     });
   } else {
-    // Single total or single state bar chart
+    // Single total or single state bar chart (Histogram: contiguous bars, no gaps)
     const values = weekKeys.map(wk => {
       const wkObj = appData.weekly_matrix[wk];
       if (!wkObj) return 0;
@@ -898,10 +902,12 @@ function renderWeeklyChart(selectedState, isCompareMode) {
     datasets = [{
       label: selectedState === 'MALAYSIA' ? t.weekly_title_total : `${t.metric_cum} (${selectedState})`,
       data: values,
-      backgroundColor: 'rgba(6, 182, 212, 0.65)',
+      backgroundColor: 'rgba(6, 182, 212, 0.75)',
       borderColor: '#06B6D4',
-      borderWidth: 1.5,
-      borderRadius: 6,
+      borderWidth: 1,
+      borderRadius: 0, // Contiguous histogram rectangular bars
+      categoryPercentage: 1.0,
+      barPercentage: 1.0,
     }];
   }
 
@@ -931,6 +937,7 @@ function renderWeeklyChart(selectedState, isCompareMode) {
       scales: {
         x: {
           stacked: isCompareMode,
+          offset: false,
           ticks: { color: tc.ticks, font: { family: 'Plus Jakarta Sans', size: 11 } },
           grid: { color: tc.grid },
           border: { color: tc.border }
@@ -970,7 +977,9 @@ function renderWeeklyChart(selectedState, isCompareMode) {
 }
 
 function renderDailyChart(selectedState, isCompareMode) {
-  const dateKeys = appData.dates || [];
+  // Only show the last 14 days trend
+  const allDates = appData.dates || [];
+  const dateKeys = allDates.slice(-14);
   const retroDates = new Set(appData.retrospective_dates || []);
   const displayLabels = dateKeys.map(d => retroDates.has(d) ? `${d} *` : d);
   const ctxDaily = document.getElementById('dailyTrendChart').getContext('2d');
@@ -981,7 +990,7 @@ function renderDailyChart(selectedState, isCompareMode) {
   let datasets = [];
 
   if (isCompareMode) {
-    // Multi-line chart for selected states
+    // Multi-line chart for selected states (14 days)
     const states = appData.latest.states
       .map(s => s.state)
       .filter(st => selectedComparisonStates.has(st));
@@ -1001,7 +1010,7 @@ function renderDailyChart(selectedState, isCompareMode) {
       };
     });
   } else {
-    // Single total or single state line/area chart
+    // Single total or single state line/area chart (14 days)
     const values = dateKeys.map(dt => {
       const dayObj = appData.daily_matrix[dt] || {};
       if (selectedState === 'MALAYSIA') {
