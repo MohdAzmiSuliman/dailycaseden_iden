@@ -11,7 +11,7 @@ window.IDENGUE_DATA = {
     "cumulative_start_raw": "4 Jan 2026",
     "cumulative_end_date": "2026-09-21",
     "cumulative_end_raw": "21 Sep 2026",
-    "scraped_at": "2026-09-22T12:48:35.874291+08:00",
+    "scraped_at": "2026-09-22T17:54:33.341428+08:00",
     "states": [
       {
         "state": "SELANGOR",
