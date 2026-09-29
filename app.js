@@ -8,6 +8,7 @@
  */
 
 let appData = null;
+let selectedTableDate = null;
 let currentSort = { column: 'cum', order: 'desc' };
 let currentSearch = '';
 let currentGraphMode = 'total'; // 'total' | 'comparison'
@@ -109,7 +110,11 @@ const TRANSLATIONS = {
     zoom_max_lbl: 'Had Maks:',
     zoom_reset: 'Reset',
     table_badge: 'JADUAL UTAMA',
-    table_title: 'Maklumat Denggi Terkini Mengikut Negeri',
+    table_date_label: '📅 Tarikh Laporan:',
+    table_date_prev: 'Hari Sebelumnya (A day before)',
+    table_date_next: 'Hari Selepasnya (A day after)',
+    table_date_latest_tag: '(Terkini)',
+    table_title: 'Maklumat Denggi Mengikut Negeri',
     table_subtitle: 'Disusun mengikut <strong>Jumlah Kes Terkumpul (Urutan Menurun / Highest on Top)</strong>',
     search_placeholder: 'Cari negeri (cth: Perak, Selangor)...',
     th_rank: '#',
@@ -188,7 +193,11 @@ const TRANSLATIONS = {
     zoom_max_lbl: 'Max Limit:',
     zoom_reset: 'Reset',
     table_badge: 'MAIN SURVEILLANCE TABLE',
-    table_title: 'Latest State-Level Dengue Surveillance Data',
+    table_date_label: '📅 Report Date:',
+    table_date_prev: 'Previous Day (A day before)',
+    table_date_next: 'Next Day (A day after)',
+    table_date_latest_tag: '(Latest)',
+    table_title: 'State-Level Dengue Surveillance Data',
     table_subtitle: 'Sorted by <strong>Cumulative Cases (Descending / Highest on Top)</strong>',
     search_placeholder: 'Search state (e.g. Perak, Selangor)...',
     th_rank: '#',
@@ -361,10 +370,12 @@ function applyStaticTranslations() {
   setTxt('btn-zoom-reset', t.zoom_reset);
 
   setTxt('lbl-table-badge', t.table_badge);
+  setTxt('lbl-table-date-select', t.table_date_label);
   setTxt('lbl-table-title', t.table_title);
   setHtml('lbl-table-subtitle', t.table_subtitle);
   const searchInput = document.getElementById('table-search');
   if (searchInput) searchInput.placeholder = t.search_placeholder;
+  populateTableDateSelector();
 
   setTxt('th-col-state', t.th_state);
   setTxt('th-col-cum', t.th_cum);
@@ -435,6 +446,115 @@ async function initData() {
   }
 }
 
+function formatDisplayDate(isoDate) {
+  if (!isoDate) return '';
+  const parts = isoDate.split('-');
+  if (parts.length !== 3) return isoDate;
+  const [y, m, d] = parts;
+  const monthNamesMs = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'];
+  const monthNamesEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthIdx = parseInt(m, 10) - 1;
+  const monthName = (currentLang === 'en' ? monthNamesEn : monthNamesMs)[monthIdx] || m;
+  return `${parseInt(d, 10)} ${monthName} ${y}`;
+}
+
+function getTableSnapshot() {
+  if (!appData) return null;
+  const date = selectedTableDate || (appData.latest ? appData.latest.report_date : null);
+  if (appData.history_by_date && appData.history_by_date[date]) {
+    return appData.history_by_date[date];
+  }
+  return appData.latest;
+}
+
+function updateDateNavButtons() {
+  const btnPrev = document.getElementById('btn-date-prev');
+  const btnNext = document.getElementById('btn-date-next');
+  if (!btnPrev && !btnNext) return;
+
+  const dates = appData && appData.dates ? appData.dates : [];
+  if (dates.length === 0) {
+    if (btnPrev) btnPrev.disabled = true;
+    if (btnNext) btnNext.disabled = true;
+    return;
+  }
+
+  const currentDate = selectedTableDate || dates[dates.length - 1];
+  const idx = dates.indexOf(currentDate);
+
+  // dates is sorted ascending: [2026-08-31, ..., 2026-09-28]
+  // Previous day (earlier date): idx > 0
+  // Next day (later date): idx < dates.length - 1
+  if (btnPrev) {
+    btnPrev.disabled = idx <= 0;
+  }
+  if (btnNext) {
+    btnNext.disabled = idx === -1 || idx >= dates.length - 1;
+  }
+}
+
+function stepTableDate(direction) {
+  const dates = appData && appData.dates ? appData.dates : [];
+  if (dates.length === 0) return;
+
+  const currentDate = selectedTableDate || dates[dates.length - 1];
+  const idx = dates.indexOf(currentDate);
+  if (idx === -1) return;
+
+  const nextIdx = idx + direction;
+  if (nextIdx >= 0 && nextIdx < dates.length) {
+    selectedTableDate = dates[nextIdx];
+    const select = document.getElementById('table-date-select');
+    if (select) {
+      select.value = selectedTableDate;
+    }
+    updateDateNavButtons();
+    renderTable();
+  }
+}
+
+function populateTableDateSelector() {
+  const select = document.getElementById('table-date-select');
+  if (!select || !appData) return;
+
+  const dates = appData.dates ? [...appData.dates].reverse() : (appData.latest ? [appData.latest.report_date] : []);
+  if (dates.length === 0) return;
+
+  if (!selectedTableDate || !dates.includes(selectedTableDate)) {
+    selectedTableDate = dates[0];
+  }
+
+  const latestDate = dates[0];
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.ms;
+  const savedSelection = selectedTableDate;
+
+  select.innerHTML = '';
+  dates.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d;
+    const formatted = formatDisplayDate(d);
+    opt.textContent = d === latestDate ? `${formatted} ${t.table_date_latest_tag}` : formatted;
+    if (d === savedSelection) {
+      opt.selected = true;
+    }
+    select.appendChild(opt);
+  });
+
+  // Update prev / next button titles and disabled states
+  const btnPrev = document.getElementById('btn-date-prev');
+  if (btnPrev) {
+    btnPrev.title = t.table_date_prev;
+    btnPrev.setAttribute('aria-label', t.table_date_prev);
+  }
+  const btnNext = document.getElementById('btn-date-next');
+  if (btnNext) {
+    btnNext.title = t.table_date_next;
+    btnNext.setAttribute('aria-label', t.table_date_next);
+  }
+
+  updateDateNavButtons();
+}
+
 function initUI() {
   if (!appData || !appData.latest) return;
   const select = document.getElementById('state-filter-select');
@@ -449,6 +569,7 @@ function initUI() {
     });
   }
 
+  populateTableDateSelector();
   initComparisonStates();
 }
 
@@ -530,12 +651,23 @@ function renderKPIs() {
 }
 
 function renderTable() {
-  if (!appData || !appData.latest) return;
-  const tbody = document.getElementById('table-body');
-  const lat = appData.latest;
-  const totalCum = lat.total.cumulative_cases || 1;
+  if (!appData) return;
+  const snapshot = getTableSnapshot();
+  if (!snapshot || !snapshot.states) return;
 
-  let rows = [...lat.states];
+  const tbody = document.getElementById('table-body');
+  const totalCum = (snapshot.total && snapshot.total.cumulative_cases) ? snapshot.total.cumulative_cases : 1;
+  const totalDaily = (snapshot.total && snapshot.total.daily_cases != null) ? snapshot.total.daily_cases : 0;
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.ms;
+
+  // Update table header column for daily cases with the selected date
+  const thDaily = document.getElementById('th-col-daily');
+  if (thDaily) {
+    const displayDate = snapshot.report_date_raw || formatDisplayDate(snapshot.report_date);
+    thDaily.textContent = t.th_daily.replace('{date}', displayDate);
+  }
+
+  let rows = [...snapshot.states];
 
   if (currentSearch.trim() !== '') {
     const q = currentSearch.toLowerCase();
@@ -556,7 +688,7 @@ function renderTable() {
     return currentSort.order === 'asc' ? vA - vB : vB - vA;
   });
 
-  const maxCum = Math.max(...lat.states.map(s => s.cumulative_cases), 1);
+  const maxCum = Math.max(...snapshot.states.map(s => s.cumulative_cases), 1);
 
   tbody.innerHTML = '';
   rows.forEach((row, idx) => {
@@ -596,9 +728,9 @@ function renderTable() {
     tbody.appendChild(tr);
   });
 
-  const nationalIR = getIncidenceRate(lat.total.cumulative_cases, 'MALAYSIA');
-  document.getElementById('tf-daily-total').innerHTML = `<strong>${Number(lat.total.daily_cases).toLocaleString()}</strong>`;
-  document.getElementById('tf-cum-total').innerHTML = `<strong>${Number(lat.total.cumulative_cases).toLocaleString()}</strong>`;
+  const nationalIR = getIncidenceRate(totalCum, 'MALAYSIA');
+  document.getElementById('tf-daily-total').innerHTML = `<strong>${Number(totalDaily).toLocaleString()}</strong>`;
+  document.getElementById('tf-cum-total').innerHTML = `<strong>${Number(totalCum).toLocaleString()}</strong>`;
   const tfIr = document.getElementById('tf-ir-total');
   if (tfIr) tfIr.innerHTML = `<strong>${nationalIR.toFixed(1)}</strong>`;
 }
@@ -1331,6 +1463,29 @@ function setupEventListeners() {
   if (select) {
     select.addEventListener('change', (e) => {
       updateCharts(e.target.value);
+    });
+  }
+
+  const tableDateSelect = document.getElementById('table-date-select');
+  if (tableDateSelect) {
+    tableDateSelect.addEventListener('change', (e) => {
+      selectedTableDate = e.target.value;
+      updateDateNavButtons();
+      renderTable();
+    });
+  }
+
+  const btnDatePrev = document.getElementById('btn-date-prev');
+  if (btnDatePrev) {
+    btnDatePrev.addEventListener('click', () => {
+      stepTableDate(-1);
+    });
+  }
+
+  const btnDateNext = document.getElementById('btn-date-next');
+  if (btnDateNext) {
+    btnDateNext.addEventListener('click', () => {
+      stepTableDate(1);
     });
   }
 

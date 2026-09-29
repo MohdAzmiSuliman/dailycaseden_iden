@@ -305,6 +305,16 @@
           </div>
 
           <div class="table-actions">
+            <div class="table-date-selector-wrapper">
+              <label for="table-date-select" class="table-date-label" id="lbl-table-date-select">📅 Tarikh Laporan:</label>
+              <div class="table-date-controls">
+                <button type="button" class="date-nav-btn" id="btn-date-prev" title="Hari Sebelumnya (A day before)" aria-label="Hari Sebelumnya">◀</button>
+                <select id="table-date-select" class="custom-select table-date-select">
+                  <!-- Options populated dynamically in app.js -->
+                </select>
+                <button type="button" class="date-nav-btn" id="btn-date-next" title="Hari Selepasnya (A day after)" aria-label="Hari Selepasnya">▶</button>
+              </div>
+            </div>
             <div class="search-box">
               <span class="search-icon">🔍</span>
               <input type="text" id="table-search" placeholder="Cari negeri (cth: Perak, Selangor)..." />

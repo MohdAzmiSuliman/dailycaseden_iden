@@ -412,9 +412,10 @@ def save_data(data: dict):
 
 
 def build_dashboard_dataset(historical_rows: list, latest_data: dict):
-    """Aggregate historical rows into daily and epid-weekly trends for frontend charts."""
+    """Aggregate historical rows into daily, epid-weekly trends, and per-date snapshots for frontend."""
     daily_map = {} # date -> {state: daily_cases}
     weekly_map = {} # (epid_year, epid_week) -> {state: sum_daily_cases, "label": ...}
+    history_by_date = {} # date -> { states: [...], total: {...}, epid_week_label: ... }
 
     for row in historical_rows:
         d = row["date"]
@@ -429,6 +430,31 @@ def build_dashboard_dataset(historical_rows: list, latest_data: dict):
             daily_map[d] = {}
         daily_map[d][st] = daily_c
 
+        # Build snapshot for date selector
+        if d not in history_by_date:
+            history_by_date[d] = {
+                "report_date": d,
+                "epid_year": int(y) if y else "",
+                "epid_week": int(w) if w else "",
+                "epid_week_label": w_lbl,
+                "cumulative_start_date": row.get("cumulative_start_date") or "",
+                "cumulative_end_date": row.get("cumulative_end_date") or "",
+                "scraped_at": row.get("scraped_at") or "",
+                "states": [],
+                "total": None,
+            }
+
+        item = {
+            "state": st,
+            "daily_cases": daily_c,
+            "cumulative_cases": cum_c,
+        }
+
+        if st == "MALAYSIA":
+            history_by_date[d]["total"] = item
+        else:
+            history_by_date[d]["states"].append(item)
+
         wk_key = f"{y}-W{int(w):02d}" if (y and w) else "Unknown"
         if wk_key not in weekly_map:
             weekly_map[wk_key] = {"label": w_lbl, "year": y, "week": w, "states": {}, "totals": {}}
@@ -436,6 +462,16 @@ def build_dashboard_dataset(historical_rows: list, latest_data: dict):
         if st not in weekly_map[wk_key]["states"]:
             weekly_map[wk_key]["states"][st] = 0
         weekly_map[wk_key]["states"][st] += daily_c
+
+    # Ensure states within each snapshot date are sorted descending by cumulative_cases
+    for d, snap in history_by_date.items():
+        snap["states"].sort(key=lambda x: x["cumulative_cases"], reverse=True)
+        if not snap["total"]:
+            snap["total"] = {
+                "state": "MALAYSIA",
+                "daily_cases": sum(s["daily_cases"] for s in snap["states"]),
+                "cumulative_cases": sum(s["cumulative_cases"] for s in snap["states"]),
+            }
 
     # Convert to sorted lists
     sorted_dates = sorted(daily_map.keys())
@@ -450,6 +486,7 @@ def build_dashboard_dataset(historical_rows: list, latest_data: dict):
         "latest": latest_data,
         "dates": sorted_dates,
         "daily_matrix": daily_map,
+        "history_by_date": history_by_date,
         "weeks": sorted_weeks,
         "weekly_matrix": weekly_map,
         "retrospective_dates": retrospective_dates,
