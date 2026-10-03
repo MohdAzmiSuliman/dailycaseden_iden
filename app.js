@@ -86,6 +86,7 @@ const TRANSLATIONS = {
     quick_presets_lbl: 'Pilihan Pantas:',
     preset_top3: 'Top 3',
     preset_top5: 'Top 5',
+    preset_perak: 'Perak (±2)',
     preset_bot3: 'Bottom 3',
     preset_bot5: 'Bottom 5',
     preset_all: 'Pilih Semua (15)',
@@ -169,6 +170,7 @@ const TRANSLATIONS = {
     quick_presets_lbl: 'Quick Presets:',
     preset_top3: 'Top 3',
     preset_top5: 'Top 5',
+    preset_perak: 'Perak (±2)',
     preset_bot3: 'Bottom 3',
     preset_bot5: 'Bottom 5',
     preset_all: 'Select All (15)',
@@ -223,7 +225,7 @@ const STATE_COLORS = {
   'JOHOR': '#06B6D4',
   'NEGERI SEMBILAN': '#8B5CF6',
   'SABAH': '#10B981',
-  'PERAK': '#3B82F6',
+  'PERAK': '#000000',
   'KELANTAN': '#EC4899',
   'PULAU PINANG': '#14B8A6',
   'PAHANG': '#F97316',
@@ -238,7 +240,7 @@ const STATE_COLORS = {
 
 const DEFAULT_COLOR_PALETTE = [
   '#EF4444', '#F59E0B', '#06B6D4', '#8B5CF6', '#10B981',
-  '#3B82F6', '#EC4899', '#14B8A6', '#F97316', '#84CC16',
+  '#000000', '#EC4899', '#14B8A6', '#F97316', '#84CC16',
   '#6366F1', '#EAB308', '#A855F7', '#94A3B8', '#2DD4BF'
 ];
 
@@ -352,6 +354,7 @@ function applyStaticTranslations() {
   setTxt('lbl-quick-presets', t.quick_presets_lbl);
   setTxt('btn-preset-top3', t.preset_top3);
   setTxt('btn-preset-top5', t.preset_top5);
+  setTxt('btn-preset-perak', t.preset_perak);
   setTxt('btn-preset-bot3', t.preset_bot3);
   setTxt('btn-preset-bot5', t.preset_bot5);
   setTxt('btn-preset-all', t.preset_all);
@@ -408,6 +411,13 @@ function getChartThemeColors() {
     singleDailyLineBg: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(220, 38, 38, 0.12)',
     singleDailyBorder: isDark ? '#EF4444' : '#DC2626',
   };
+}
+
+function getStateColor(stateName, isDark = false) {
+  if (stateName === 'PERAK') {
+    return isDark ? '#E2E8F0' : '#000000';
+  }
+  return STATE_COLORS[stateName] || '#06B6D4';
 }
 
 async function initData() {
@@ -774,9 +784,10 @@ function renderStateChips() {
   const states = [...appData.latest.states].sort((a, b) => b.cumulative_cases - a.cumulative_cases);
   container.innerHTML = '';
 
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   states.forEach(s => {
     const isSelected = selectedComparisonStates.has(s.state);
-    const color = STATE_COLORS[s.state] || '#06B6D4';
+    const color = getStateColor(s.state, isDark);
 
     const chip = document.createElement('button');
     chip.type = 'button';
@@ -800,6 +811,15 @@ function renderStateChips() {
     countBadge.textContent = `${selectedComparisonStates.size} ${t.selected_states_suffix}`;
   }
 
+  // Calculate Perak ±2 slice (Perak + 2 states above + 2 states below based on cumulative ranking)
+  const perakIdx = states.findIndex(s => s.state === 'PERAK');
+  const perakSlice = perakIdx !== -1
+    ? states.slice(Math.max(0, perakIdx - 2), Math.min(states.length, perakIdx + 3)).map(s => s.state)
+    : [];
+  const isPerakPreset = perakSlice.length > 0
+    && selectedComparisonStates.size === perakSlice.length
+    && perakSlice.every(st => selectedComparisonStates.has(st));
+
   // Update active state on preset buttons
   const isTop3 = selectedComparisonStates.size === 3 && states.slice(0, 3).every(s => selectedComparisonStates.has(s.state));
   const isTop5 = selectedComparisonStates.size === 5 && states.slice(0, 5).every(s => selectedComparisonStates.has(s.state));
@@ -809,6 +829,7 @@ function renderStateChips() {
 
   document.getElementById('btn-preset-top3')?.classList.toggle('active', isTop3);
   document.getElementById('btn-preset-top5')?.classList.toggle('active', isTop5);
+  document.getElementById('btn-preset-perak')?.classList.toggle('active', isPerakPreset);
   document.getElementById('btn-preset-bot3')?.classList.toggle('active', isBot3);
   document.getElementById('btn-preset-bot5')?.classList.toggle('active', isBot5);
   document.getElementById('btn-preset-all')?.classList.toggle('active', isAll);
@@ -838,6 +859,15 @@ function applyStatePreset(preset) {
     selectedComparisonStates = new Set(sorted.slice(0, 3).map(s => s.state));
   } else if (preset === 'top5') {
     selectedComparisonStates = new Set(sorted.slice(0, 5).map(s => s.state));
+  } else if (preset === 'perak') {
+    const idx = sorted.findIndex(s => s.state === 'PERAK');
+    if (idx !== -1) {
+      const start = Math.max(0, idx - 2);
+      const end = Math.min(sorted.length, idx + 3);
+      selectedComparisonStates = new Set(sorted.slice(start, end).map(s => s.state));
+    } else {
+      selectedComparisonStates = new Set(['PERAK']);
+    }
   } else if (preset === 'bot3') {
     selectedComparisonStates = new Set(sorted.slice(-3).map(s => s.state));
   } else if (preset === 'bot5') {
@@ -994,27 +1024,28 @@ function renderWeeklyChart(selectedState, isCompareMode) {
 
   if (weeklyChart) weeklyChart.destroy();
 
+  const tc = getChartThemeColors();
   let datasets = [];
 
   if (isCompareMode) {
-    // Multi-state stacked bar chart for selected comparison states
+    // Multi-state line chart for selected comparison states
     const states = appData.latest.states
       .map(s => s.state)
       .filter(st => selectedComparisonStates.has(st));
 
     datasets = states.map(st => {
-      const color = STATE_COLORS[st] || '#06B6D4';
+      const color = getStateColor(st, tc.isDark);
       const data = weekKeys.map(wk => appData.weekly_matrix[wk]?.states[st] || 0);
       return {
         label: st,
         data: data,
+        borderColor: color,
         backgroundColor: color,
-        borderWidth: 0.5,
-        borderColor: 'rgba(0, 0, 0, 0.1)',
-        borderRadius: 0,
-        stack: 'weekly_stack',
-        categoryPercentage: 1.0,
-        barPercentage: 1.0,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        tension: 0.3,
+        fill: false
       };
     });
   } else {
@@ -1043,10 +1074,8 @@ function renderWeeklyChart(selectedState, isCompareMode) {
     }];
   }
 
-  const tc = getChartThemeColors();
-
   weeklyChart = new Chart(ctxWeekly, {
-    type: 'bar',
+    type: isCompareMode ? 'line' : 'bar',
     data: { labels: weekLabels, datasets: datasets },
     options: {
       responsive: true,
@@ -1068,15 +1097,13 @@ function renderWeeklyChart(selectedState, isCompareMode) {
       },
       scales: {
         x: {
-          stacked: isCompareMode,
-          offset: false,
+          offset: !isCompareMode ? false : true,
           ticks: { color: tc.ticks, font: { family: 'Plus Jakarta Sans', size: 11 } },
           grid: { color: tc.grid },
           border: { color: tc.border }
         },
         y: {
           position: 'left',
-          stacked: isCompareMode,
           beginAtZero: true,
           ticks: { color: tc.ticks, font: { family: 'JetBrains Mono', size: 11 } },
           grid: { color: tc.grid },
@@ -1084,7 +1111,6 @@ function renderWeeklyChart(selectedState, isCompareMode) {
         },
         y1: {
           position: 'right',
-          stacked: isCompareMode,
           beginAtZero: true,
           ticks: { color: tc.ticks, font: { family: 'JetBrains Mono', size: 11 } },
           grid: { drawOnChartArea: false, color: tc.grid },
@@ -1119,6 +1145,7 @@ function renderDailyChart(selectedState, isCompareMode) {
 
   if (dailyChart) dailyChart.destroy();
 
+  const tc = getChartThemeColors();
   let datasets = [];
 
   if (isCompareMode) {
@@ -1128,7 +1155,7 @@ function renderDailyChart(selectedState, isCompareMode) {
       .filter(st => selectedComparisonStates.has(st));
 
     datasets = states.map(st => {
-      const color = STATE_COLORS[st] || '#EF4444';
+      const color = getStateColor(st, tc.isDark);
       const data = dateKeys.map(dt => appData.daily_matrix[dt]?.[st] || 0);
       return {
         label: st,
@@ -1163,8 +1190,6 @@ function renderDailyChart(selectedState, isCompareMode) {
       pointRadius: 5,
     }];
   }
-
-  const tc = getChartThemeColors();
 
   dailyChart = new Chart(ctxDaily, {
     type: 'line',
