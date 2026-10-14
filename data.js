@@ -11,7 +11,7 @@ window.IDENGUE_DATA = {
     "cumulative_start_raw": "4 Jan 2026",
     "cumulative_end_date": "2026-10-13",
     "cumulative_end_raw": "13 Oct 2026",
-    "scraped_at": "2026-10-14T12:47:09.458494+08:00",
+    "scraped_at": "2026-10-14T18:07:47.525508+08:00",
     "states": [
       {
         "state": "SELANGOR",
@@ -4856,7 +4856,7 @@ window.IDENGUE_DATA = {
       "epid_week_label": "ME 41/2026 (11/10 - 17/10)",
       "cumulative_start_date": "2026-01-04",
       "cumulative_end_date": "2026-10-13",
-      "scraped_at": "2026-10-14T12:47:09.458494+08:00",
+      "scraped_at": "2026-10-14T18:07:47.525508+08:00",
       "states": [
         {
           "state": "SELANGOR",
