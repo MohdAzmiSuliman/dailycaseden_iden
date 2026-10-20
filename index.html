@@ -70,20 +70,29 @@
         </div>
 
         <div class="header-meta">
-          <div class="meta-card">
-            <div class="meta-label" id="lbl-hdr-report-date">TARIKH LAPORAN IDENGUE</div>
-            <div class="meta-value" id="hdr-report-date">-</div>
-            <div class="meta-sub" id="hdr-cum-period">Kumulatif dari -</div>
-          </div>
+          <!-- 1. EPIDEMIOLOGICAL WEEK -->
           <div class="meta-card highlight">
             <div class="meta-label" id="lbl-hdr-epid-week">MINGGU EPIDEMIOLOGI</div>
             <div class="meta-value accent" id="hdr-epid-week">-</div>
             <div class="meta-sub" id="hdr-epid-dates">-</div>
           </div>
+          <!-- 2. IDENGUE REPORT DATE -->
+          <div class="meta-card">
+            <div class="meta-label" id="lbl-hdr-report-date">TARIKH LAPORAN IDENGUE</div>
+            <div class="meta-value" id="hdr-report-date">-</div>
+            <div class="meta-sub" id="hdr-cum-period">Kumulatif dari -</div>
+          </div>
+          <!-- 3. LAST UPDATED (WORKFLOW) -->
           <div class="meta-card updated-card">
             <div class="meta-label" id="lbl-hdr-last-updated">KEMASKINI TERAKHIR (WORKFLOW)</div>
             <div class="meta-value accent-green" id="hdr-last-updated-date">-</div>
             <div class="meta-sub" id="hdr-last-updated-time">Masa Ingestion: -</div>
+          </div>
+          <!-- 4. LAST AVAILABLE DATA IDENGUE -->
+          <div class="meta-card available-card">
+            <div class="meta-label" id="lbl-hdr-last-available">DATA TERAKHIR IDENGUE TERSEDIA</div>
+            <div class="meta-value accent-amber" id="hdr-last-available-date">-</div>
+            <div class="meta-sub" id="hdr-last-available-status">Status: -</div>
           </div>
         </div>
       </div>
@@ -240,9 +249,22 @@
         <div class="chart-wrapper">
           <canvas id="dailyTrendChart"></canvas>
         </div>
-        <div id="daily-retro-alert" class="chart-retro-alert" style="display: none;">
-          <span class="retro-alert-icon">⚠️</span>
-          <span id="daily-retro-alert-text" class="retro-alert-text"></span>
+      </div>
+
+      <!-- NA / Unreleased Dates Column -->
+      <div class="chart-panel na-dates-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title" id="lbl-na-panel-title">Tarikh N/A (Tiada Buletin)</h2>
+            <p class="panel-subtitle" id="lbl-na-panel-subtitle">Buletin rasmi tidak diterbitkan iDengue</p>
+          </div>
+          <span class="panel-tag warning" id="lbl-na-count-badge">Tarikh N/A</span>
+        </div>
+        <div class="na-dates-list" id="na-dates-container">
+          <!-- Populated dynamically in app.js -->
+        </div>
+        <div class="na-panel-footer" id="lbl-na-panel-note">
+          * Buletin rasmi iDengue tidak diterbitkan bagi tarikh-tarikh ini. Nilai dijana secara retrospektif daripada perbezaan kes kumulatif.
         </div>
       </div>
 

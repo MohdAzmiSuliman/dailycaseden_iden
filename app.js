@@ -57,6 +57,9 @@ const TRANSLATIONS = {
     hdr_report_date_lbl: 'TARIKH LAPORAN IDENGUE',
     hdr_epid_week_lbl: 'MINGGU EPIDEMIOLOGI',
     hdr_last_updated_lbl: 'KEMASKINI TERAKHIR (WORKFLOW)',
+    hdr_last_available_lbl: 'DATA TERAKHIR IDENGUE TERSEDIA',
+    hdr_available_status_latest: 'Status: Data Rasmi Terkini',
+    hdr_available_status_lag: 'Status: Tertunda {days} hari (belum dikemaskini)',
     hdr_cum_prefix: 'Kumulatif:',
     hdr_cum_to: 'hingga',
     hdr_epid_prefix: 'Takwim ME:',
@@ -99,6 +102,14 @@ const TRANSLATIONS = {
     daily_title_state: 'Trend Harian ({state})',
     daily_title_compare: 'Trend Harian Mengikut {count} Negeri Pilihan',
     daily_subtitle: 'Pergerakan kes denggi harian dari tarikh ke tarikh',
+    na_panel_title: 'Tarikh N/A (Tiada Buletin)',
+    na_panel_subtitle: 'Buletin rasmi tidak diterbitkan iDengue',
+    na_badge_dates: '{count} Tarikh N/A',
+    na_retro_tag: 'Retrospektif',
+    na_view_table: 'Lihat Jadual ↗',
+    na_cases_count: '{count} kes',
+    na_panel_note: '* Buletin rasmi iDengue tidak diterbitkan bagi tarikh-tarikh ini. Nilai dijana secara retrospektif daripada perbezaan kes kumulatif.',
+    na_empty_msg: 'Tiada tarikh N/A dikesan.',
     state_chart_title: 'Perbandingan Kes Antara 15 Negeri di Malaysia',
     state_chart_subtitle: 'Perbandingan langsung beban kes denggi mengikut setiap negeri (disusun mengikut jumlah kes)',
     metric_cum: 'Kes Terkumpul',
@@ -141,6 +152,9 @@ const TRANSLATIONS = {
     hdr_report_date_lbl: 'IDENGUE REPORT DATE',
     hdr_epid_week_lbl: 'EPIDEMIOLOGICAL WEEK',
     hdr_last_updated_lbl: 'LAST UPDATED (WORKFLOW)',
+    hdr_last_available_lbl: 'LAST AVAILABLE DATA IDENGUE',
+    hdr_available_status_latest: 'Status: Latest Official Data',
+    hdr_available_status_lag: 'Status: Delayed by {days} days (not updated yet)',
     hdr_cum_prefix: 'Cumulative:',
     hdr_cum_to: 'to',
     hdr_epid_prefix: 'EW Calendar:',
@@ -183,6 +197,14 @@ const TRANSLATIONS = {
     daily_title_state: 'Daily Trend ({state})',
     daily_title_compare: 'Daily Trend Across {count} Selected States',
     daily_subtitle: 'Daily case trajectory over time',
+    na_panel_title: 'N/A Dates (Unreleased)',
+    na_panel_subtitle: 'Official iDengue bulletins unreleased for these dates',
+    na_badge_dates: '{count} N/A Dates',
+    na_retro_tag: 'Retrospective',
+    na_view_table: 'View Table ↗',
+    na_cases_count: '{count} cases',
+    na_panel_note: '* Official iDengue bulletins were unreleased for these dates. Figures were calculated retrospectively from cumulative case deltas.',
+    na_empty_msg: 'No N/A dates recorded.',
     state_chart_title: 'Dengue Case Comparison Across 15 Malaysian States',
     state_chart_subtitle: 'Direct state burden comparison (sorted by total cases)',
     metric_cum: 'Cumulative Cases',
@@ -326,9 +348,10 @@ function applyStaticTranslations() {
   setTxt('lbl-main-title', t.main_title);
   setTxt('lbl-subtitle', t.subtitle);
   setTxt('lbl-header-note', t.header_note);
-  setTxt('lbl-hdr-report-date', t.hdr_report_date_lbl);
   setTxt('lbl-hdr-epid-week', t.hdr_epid_week_lbl);
+  setTxt('lbl-hdr-report-date', t.hdr_report_date_lbl);
   setTxt('lbl-hdr-last-updated', t.hdr_last_updated_lbl);
+  setTxt('lbl-hdr-last-available', t.hdr_last_available_lbl);
 
   setTxt('lbl-kpi-daily-title', t.kpi_daily_title);
   setTxt('kpi-daily-badge', t.kpi_daily_badge);
@@ -373,6 +396,9 @@ function applyStaticTranslations() {
   setTxt('btn-zoom-reset', t.zoom_reset);
 
   setTxt('lbl-table-badge', t.table_badge);
+  setTxt('lbl-na-panel-title', t.na_panel_title);
+  setTxt('lbl-na-panel-subtitle', t.na_panel_subtitle);
+  setHtml('lbl-na-panel-note', t.na_panel_note);
   setTxt('lbl-table-date-select', t.table_date_label);
   setTxt('lbl-table-title', t.table_title);
   setHtml('lbl-table-subtitle', t.table_subtitle);
@@ -588,24 +614,23 @@ function renderHeader() {
   const lat = appData.latest;
   const t = TRANSLATIONS[currentLang] || TRANSLATIONS.ms;
 
-  document.getElementById('hdr-report-date').textContent = lat.report_date_raw || lat.report_date;
-  document.getElementById('hdr-cum-period').textContent = `${t.hdr_cum_prefix} ${lat.cumulative_start_raw || lat.cumulative_start_date} ${t.hdr_cum_to} ${lat.cumulative_end_raw || lat.cumulative_end_date}`;
+  // 1. EPIDEMIOLOGICAL WEEK
   document.getElementById('hdr-epid-week').textContent = lat.epid_week_label || `ME ${lat.epid_week}/${lat.epid_year}`;
   document.getElementById('hdr-epid-dates').textContent = `${t.hdr_epid_prefix} ${lat.epid_week_start} ${t.hdr_cum_to} ${lat.epid_week_end}`;
-  const thReportDate = document.getElementById('th-report-date');
-  if (thReportDate) thReportDate.textContent = lat.report_date_raw || lat.report_date;
 
-  const thDaily = document.getElementById('th-col-daily');
-  if (thDaily) {
-    thDaily.textContent = t.th_daily.replace('{date}', lat.report_date_raw || lat.report_date);
-  }
+  // 2. IDENGUE REPORT DATE
+  document.getElementById('hdr-report-date').textContent = lat.report_date_raw || lat.report_date;
+  document.getElementById('hdr-cum-period').textContent = `${t.hdr_cum_prefix} ${lat.cumulative_start_raw || lat.cumulative_start_date} ${t.hdr_cum_to} ${lat.cumulative_end_raw || lat.cumulative_end_date}`;
 
+  // 3. LAST UPDATED (WORKFLOW)
+  let workflowDateObj = null;
   if (lat.scraped_at) {
     let dateStr = String(lat.scraped_at).trim();
     if (!dateStr.includes('Z') && !dateStr.includes('+') && !dateStr.slice(10).includes('-')) {
       dateStr += 'Z';
     }
     const dt = new Date(dateStr);
+    workflowDateObj = dt;
 
     const dateFormatted = dt.toLocaleDateString(currentLang === 'en' ? 'en-MY' : 'ms-MY', {
       timeZone: 'Asia/Kuala_Lumpur',
@@ -630,6 +655,39 @@ function renderHeader() {
 
     const noteElem = document.getElementById('scraped-timestamp-note');
     if (noteElem) noteElem.textContent = t.table_auto_update_note.replace('{date}', `${fullFormatted} (MYT)`);
+  }
+
+  // 4. LAST AVAILABLE DATA IDENGUE
+  const availDateElem = document.getElementById('hdr-last-available-date');
+  const availStatusElem = document.getElementById('hdr-last-available-status');
+  if (availDateElem) {
+    availDateElem.textContent = lat.report_date_raw || lat.report_date;
+  }
+  if (availStatusElem) {
+    let lagDays = 0;
+    if (workflowDateObj && lat.report_date) {
+      try {
+        const wfIso = workflowDateObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }); // YYYY-MM-DD
+        const dWf = new Date(wfIso + 'T00:00:00');
+        const dRep = new Date(lat.report_date + 'T00:00:00');
+        lagDays = Math.max(0, Math.round((dWf - dRep) / (1000 * 60 * 60 * 24)));
+      } catch (e) {
+        lagDays = 0;
+      }
+    }
+    if (lagDays <= 1) {
+      availStatusElem.textContent = t.hdr_available_status_latest;
+    } else {
+      availStatusElem.textContent = t.hdr_available_status_lag.replace('{days}', lagDays);
+    }
+  }
+
+  const thReportDate = document.getElementById('th-report-date');
+  if (thReportDate) thReportDate.textContent = lat.report_date_raw || lat.report_date;
+
+  const thDaily = document.getElementById('th-col-daily');
+  if (thDaily) {
+    thDaily.textContent = t.th_daily.replace('{date}', lat.report_date_raw || lat.report_date);
   }
 }
 
@@ -1014,6 +1072,9 @@ function updateCharts(selectedState) {
 
   // 2. Daily Chart
   renderDailyChart(selectedState, isCompareMode);
+
+  // 3. NA Dates List
+  renderNADatesList();
 }
 
 function renderWeeklyChart(selectedState, isCompareMode) {
@@ -1135,9 +1196,19 @@ function renderWeeklyChart(selectedState, isCompareMode) {
 }
 
 function renderDailyChart(selectedState, isCompareMode) {
-  // Only show the last 14 days trend
+  // Show continuous 14-day daily trend with strict 1-day calendar intervals
   const allDates = appData.dates || [];
-  const dateKeys = allDates.slice(-14);
+  let dateKeys = [];
+  if (allDates.length > 0) {
+    const latestDateStr = allDates[allDates.length - 1];
+    const [y, m, d] = latestDateStr.split('-').map(Number);
+    const endDate = new Date(Date.UTC(y, m - 1, d));
+    for (let i = 13; i >= 0; i--) {
+      const dt = new Date(endDate);
+      dt.setUTCDate(endDate.getUTCDate() - i);
+      dateKeys.push(dt.toISOString().slice(0, 10));
+    }
+  }
   const retroDates = new Set(appData.retrospective_dates || []);
   const displayLabels = dateKeys.map(d => retroDates.has(d) ? `${d} *` : d);
   const ctxDaily = document.getElementById('dailyTrendChart').getContext('2d');
@@ -1273,20 +1344,66 @@ function renderDailyChart(selectedState, isCompareMode) {
     }
   });
 
-  // Update retrospective calculation alert notice
-  const retroAlertEl = document.getElementById('daily-retro-alert');
-  const retroAlertText = document.getElementById('daily-retro-alert-text');
-  if (retroAlertEl && retroAlertText) {
-    if (retroDates.size > 0) {
-      const datesList = Array.from(retroDates).join(', ');
-      retroAlertText.innerHTML = currentLang === 'en'
-        ? `<strong>* Note:</strong> Data for <code>${datesList}</code> was calculated retrospectively from cumulative case delta changes because the official iDengue bulletin was unreleased.`
-        : `<strong>* Perhatian:</strong> Data bagi <code>${datesList}</code> dikira secara retrospektif daripada perbezaan kes kumulatif berikutan ketiadaan buletin rasmi iDengue.`;
-      retroAlertEl.style.display = 'flex';
-    } else {
-      retroAlertEl.style.display = 'none';
-    }
+  renderNADatesList();
+}
+
+function renderNADatesList() {
+  const container = document.getElementById('na-dates-container');
+  if (!container || !appData) return;
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.ms;
+
+  const retroDates = appData.retrospective_dates || [];
+  const countBadge = document.getElementById('lbl-na-count-badge');
+  if (countBadge) {
+    countBadge.textContent = t.na_badge_dates.replace('{count}', retroDates.length);
   }
+
+  container.innerHTML = '';
+  if (retroDates.length === 0) {
+    container.innerHTML = `<div style="color: var(--text-muted); font-size: 12px; padding: 12px 0;">${t.na_empty_msg}</div>`;
+    return;
+  }
+
+  // Show newest NA dates first
+  const sortedDates = [...retroDates].sort().reverse();
+  const dayNamesMs = ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'];
+  const dayNamesEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  sortedDates.forEach(d => {
+    const card = document.createElement('div');
+    card.className = 'na-date-card';
+    card.title = currentLang === 'en' ? `Click to view data for ${d} in table` : `Klik untuk melihat data ${d} dalam jadual`;
+
+    const dtObj = new Date(d + 'T00:00:00');
+    const dayOfWeek = (currentLang === 'en' ? dayNamesEn : dayNamesMs)[dtObj.getDay()] || '';
+    const formattedDate = formatDisplayDate(d);
+
+    const nationalDaily = appData.daily_matrix[d]?.['MALAYSIA'] ?? 0;
+    const casesText = t.na_cases_count.replace('{count}', Number(nationalDaily).toLocaleString());
+
+    card.innerHTML = `
+      <div class="na-date-top">
+        <span class="na-date-title">🗓️ ${formattedDate} <span style="font-weight: 500; font-size: 11px; color: var(--text-muted);">(${dayOfWeek})</span></span>
+        <span class="na-badge">${t.na_retro_tag}</span>
+      </div>
+      <div class="na-date-bottom">
+        <span>🇲🇾 ${casesText}</span>
+        <span class="na-tag-link">${t.na_view_table}</span>
+      </div>
+    `;
+
+    card.addEventListener('click', () => {
+      selectedTableDate = d;
+      const select = document.getElementById('table-date-select');
+      if (select) select.value = d;
+      updateDateNavButtons();
+      renderTable();
+      const tbl = document.getElementById('dengue-table');
+      if (tbl) tbl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+    container.appendChild(card);
+  });
 }
 
 function renderStateComparisonChart() {

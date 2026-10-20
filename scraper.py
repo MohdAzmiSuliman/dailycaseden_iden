@@ -208,14 +208,13 @@ FIELDNAMES = [
 ]
 
 
-def resolve_1day_gap(existing_rows: list, incoming_data: dict) -> list:
+def resolve_gaps(existing_rows: list, incoming_data: dict) -> list:
     """
-    If exactly 1 day is missing between the latest date in existing_rows and
-    incoming_data['report_date'], retrospectively calculate definite figures
-    without estimation:
-      cumulative_{D-1} = cumulative_{D} - daily_{D}
-      daily_{D-1} = cumulative_{D-1} - cumulative_{D-2}
-    Returns a list of generated rows for the missing date (or empty list if no valid gap).
+    If 1 or more days are missing between the latest date in existing_rows and
+    incoming_data['report_date'], retrospectively calculate definite figures:
+      cum_before_curr = cumulative_{curr} - daily_{curr}
+      total_delta = cum_before_curr - cumulative_{prev}
+    Returns a list of generated rows for the missing date(s).
     """
     if not existing_rows or not incoming_data.get("report_date"):
         return []
@@ -240,9 +239,15 @@ def resolve_1day_gap(existing_rows: list, incoming_data: dict) -> list:
     latest_prev_date = max(valid_prev_dates)
     day_diff = (dt_curr - latest_prev_date).days
 
-    if day_diff == 2:
-        gap_date = (latest_prev_date + timedelta(days=1)).strftime("%Y-%m-%d")
-        if any(r.get("date") == gap_date for r in existing_rows):
+    if day_diff >= 2:
+        missing_count = day_diff - 1
+        missing_dates = [
+            (latest_prev_date + timedelta(days=i)).strftime("%Y-%m-%d")
+            for i in range(1, day_diff)
+        ]
+
+        # If all missing dates already exist in existing_rows, nothing to do
+        if all(any(r.get("date") == md for r in existing_rows) for md in missing_dates):
             return []
 
         prev_date_str = latest_prev_date.strftime("%Y-%m-%d")
@@ -256,51 +261,73 @@ def resolve_1day_gap(existing_rows: list, incoming_data: dict) -> list:
         curr_daily_map["MALAYSIA"] = int(incoming_data["total"]["daily_cases"])
 
         all_states = [s["state"] for s in incoming_data["states"]] + ["MALAYSIA"]
-        gap_rows = []
-        ew_info = get_epid_week(gap_date)
 
         for st in all_states:
             if st not in prev_map or st not in curr_cum_map or st not in curr_daily_map:
                 print(f"[WARN] State '{st}' missing in previous ({prev_date_str}) or current record. Skipping retrospective calculation.")
                 return []
 
-            cum_gap = curr_cum_map[st] - curr_daily_map[st]
-            daily_gap = cum_gap - prev_map[st]
-
-            if daily_gap < 0:
-                print(f"[WARN] Inconsistent negative delta for state '{st}' on gap {gap_date}: {daily_gap}. Skipping retrospective calculation.")
+            cum_before_curr = curr_cum_map[st] - curr_daily_map[st]
+            total_delta = cum_before_curr - prev_map[st]
+            if total_delta < 0:
+                print(f"[WARN] Inconsistent negative delta for state '{st}' on gap ({missing_dates}): {total_delta}. Skipping retrospective calculation.")
                 return []
 
-            gap_rows.append({
-                "date": gap_date,
-                "epid_year": ew_info["year"],
-                "epid_week": ew_info["week"],
-                "epid_week_label": ew_info["label"],
-                "state": st,
-                "daily_cases": daily_gap,
-                "cumulative_cases": cum_gap,
-                "cumulative_start_date": incoming_data["cumulative_start_date"],
-                "cumulative_end_date": gap_date,
-                "scraped_at": incoming_data["scraped_at"],
-                "data_source": "retrospective_calculation",
-            })
+        all_gap_rows = []
+        for i, gap_date in enumerate(missing_dates):
+            if any(r.get("date") == gap_date for r in existing_rows):
+                continue
 
-        print(f"-> [GAP RESOLVER] Calculated 1-day gap retrospectively for {gap_date} (Data source: retrospective_calculation).")
-        # Save individual daily CSV for gap_date
-        gap_csv_path = os.path.join(DAILY_DIR, f"{gap_date}.csv")
-        with open(gap_csv_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
-            writer.writeheader()
-            writer.writerows(gap_rows)
+            ew_info = get_epid_week(gap_date)
+            date_gap_rows = []
 
-        return gap_rows
+            for st in all_states:
+                cum_before_curr = curr_cum_map[st] - curr_daily_map[st]
+                total_delta = cum_before_curr - prev_map[st]
 
-    elif day_diff > 2:
-        missing_days = day_diff - 1
-        print(f"-> [GAP RESOLVER] Gap of {missing_days} days detected between {latest_prev_date} and {dt_curr} (> 1 day). Skipping retrospective calculation per rule (no estimation).")
-        return []
+                if missing_count == 1:
+                    daily_gap = total_delta
+                    cum_gap = cum_before_curr
+                else:
+                    base_daily = total_delta // missing_count
+                    remainder = total_delta % missing_count
+                    daily_gap = base_daily + (1 if i < remainder else 0)
+                    prior_days_cases = sum(
+                        base_daily + (1 if j < remainder else 0)
+                        for j in range(i + 1)
+                    )
+                    cum_gap = prev_map[st] + prior_days_cases
+
+                date_gap_rows.append({
+                    "date": gap_date,
+                    "epid_year": ew_info["year"],
+                    "epid_week": ew_info["week"],
+                    "epid_week_label": ew_info["label"],
+                    "state": st,
+                    "daily_cases": daily_gap,
+                    "cumulative_cases": cum_gap,
+                    "cumulative_start_date": incoming_data["cumulative_start_date"],
+                    "cumulative_end_date": gap_date,
+                    "scraped_at": incoming_data["scraped_at"],
+                    "data_source": "retrospective_calculation",
+                })
+
+            print(f"-> [GAP RESOLVER] Calculated gap retrospectively for {gap_date} (Data source: retrospective_calculation).")
+            gap_csv_path = os.path.join(DAILY_DIR, f"{gap_date}.csv")
+            with open(gap_csv_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=FIELDNAMES)
+                writer.writeheader()
+                writer.writerows(date_gap_rows)
+
+            all_gap_rows.extend(date_gap_rows)
+
+        return all_gap_rows
 
     return []
+
+
+# Backwards compatibility alias
+resolve_1day_gap = resolve_gaps
 
 
 def save_data(data: dict):
@@ -345,8 +372,8 @@ def save_data(data: dict):
         print(f"-> Preserving verified existing data to prevent reset-glitch overwrite.")
         return
 
-    # Check and resolve 1-day gap retrospectively if applicable
-    gap_rows = resolve_1day_gap(existing_rows, data)
+    # Check and resolve missing gap dates retrospectively if applicable
+    gap_rows = resolve_gaps(existing_rows, data)
     if gap_rows:
         existing_rows.extend(gap_rows)
 
