@@ -894,25 +894,45 @@ body {
 
 .charts-grid {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "na-dates weekly"
+    "daily-cases daily-ma"
+    "ranking ranking";
   gap: 20px;
+  align-items: stretch;
 }
 
-@media (max-width: 1200px) {
-  .charts-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-  .na-dates-panel {
-    grid-column: 1 / -1;
-  }
+#na-dates-panel {
+  grid-area: na-dates;
+}
+
+#weekly-chart-panel {
+  grid-area: weekly;
+}
+
+#daily-chart-panel {
+  grid-area: daily-cases;
+}
+
+#daily-ma-panel {
+  grid-area: daily-ma;
+}
+
+#state-breakdown-panel {
+  grid-area: ranking;
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 768px) {
   .charts-grid {
     grid-template-columns: 1fr;
-  }
-  .na-dates-panel {
-    grid-column: 1;
+    grid-template-areas:
+      "na-dates"
+      "weekly"
+      "daily-cases"
+      "daily-ma"
+      "ranking";
   }
 }
 
@@ -941,6 +961,7 @@ body {
   flex-direction: column;
   gap: 10px;
   overflow-y: auto;
+  height: 290px;
   max-height: 290px;
   padding-right: 4px;
   margin-top: 14px;
@@ -1724,4 +1745,13 @@ body {
   .total-row {
     background: #F4F4F4 !important;
   }
+}
+
+.panel-card-footer {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.45;
 }

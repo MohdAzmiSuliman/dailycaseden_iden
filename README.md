@@ -1,22 +1,14 @@
-# 🦟 Malaysia Dengue Count Dashboard & Surveillance
+# 🦟 iDengue Daily Cases Surveillance & Automation Engine
 
-[![Live Dashboard](https://img.shields.io/badge/🌐_Live_Dashboard-Visit_Website-06B6D4?style=for-the-badge)](https://MohdAzmiSuliman.github.io/dailycaseden_iden/)
-[![Daily Ingestion & Dashboard Update](https://github.com/MohdAzmiSuliman/dailycaseden_iden/actions/workflows/daily_scrape.yml/badge.svg)](https://github.com/MohdAzmiSuliman/dailycaseden_iden/actions/workflows/daily_scrape.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Zero-Dependency](https://img.shields.io/badge/Python-Standard%20Lib-brightgreen.svg)](scraper.py)
-
-> 🔗 **Live Surveillance Dashboard**: [https://MohdAzmiSuliman.github.io/dailycaseden_iden/](https://MohdAzmiSuliman.github.io/dailycaseden_iden/)
-
-Automated daily scraper, historical time-series generator, and interactive surveillance dashboard for dengue fever cases in Malaysia, sourced directly from official **[iDengue MYSA](https://idengue.mysa.gov.my/)** / **CPRC KKM**.
-
-> ℹ️ *Halaman Rasmi iDengue hanya melaporkan jumlah kes harian dan kumulatif. Halaman ini mengambil data yang dilaporkan oleh iDengue, dan memetakan tren kes harian.*
+Automated daily scraper, historical time-series generator, and interactive surveillance dashboard for dengue fever cases across all 15 Malaysian states, sourced officially from CPRC Kementerian Kesihatan Malaysia (KKM) & Agensi Angkasa Malaysia (MYSA) via [iDengue](https://idengue.mysa.gov.my/index.php).
 
 ---
 
-## 🌟 Key Features
+## ✨ Features
 
-1. **Daily Automated Ingestion**:
-   - Fetches live statistics from iDengue (handling SSL certs and dynamic reporting changes).
+1. **Robust Web Scraper (`scraper.py`)**:
+   - Fetches live data from iDengue's statistics page.
+   - Robustly parses the official HTML table structure with regex and fallback extractors.
    - Extracts daily cases, cumulative cases, report date, and cumulative period.
    - Automatically maps dates to official **Malaysian Epidemiological Weeks (Minggu Epidemiologi / ME 2025–2026)**.
 
@@ -25,35 +17,44 @@ Automated daily scraper, historical time-series generator, and interactive surve
    - **`data/historical_dengue_cases.csv`**: Master time-series database (idempotent, prevents duplicate runs on the same date).
    - **`data/daily/YYYY-MM-DD.csv`**: Individual daily snapshot archives.
 
-3. **Modern Static Dashboard (`index.html`)**:
-   - **Main Table Sorted by Cumulative Descending** (highest cases on top, e.g. Selangor, WP Kuala Lumpur, Johor...).
-   - **Daily Trend Chart**: Tracks daily cases across all days.
-   - **Weekly Epid Trend Chart**: Aggregates cases by Epidemiological Week (Ahad – Sabtu).
-   - **State Filter Dropdown**: View trends for All Malaysia or drill down into specific states (Perak, Selangor, Sabah, etc.).
+3. **Modern Static Dashboard (`index.html` & `app.js`)**:
+   - **2x2 Balanced Grid Layout**:
+     - *Row 1*: N/A Dates (Unreleased Bulletins) | Weekly Total Cases (Epidemiological Weeks).
+     - *Row 2*: Daily Total Cases | Daily Cases 14-Day Moving Average & 7-Day Projection.
+     - *Row 3*: Dengue Case Comparison Across 15 Malaysian States (Interactive horizontal ranking with Linear/Log scale and zoom controls).
+   - **14-Day Moving Average & 7-Day Projection**:
+     - Displays 7 days prior observed moving average.
+     - Projects the next 7 days forward using a 28-day baseline trend regression.
+   - **Quick Comparison Presets (Default: Perak $\pm 2$)**:
+     - Multi-state comparison mode defaults to **Perak ($\pm 2$)** (`NEGERI SEMBILAN`, `SABAH`, `PERAK`, `KELANTAN`, `PULAU PINANG`).
+   - **High-Contrast Alternating Color Palette**:
+     - Rank-alternating palette so adjacent/neighboring rank states never share similar hues (e.g. Sabah is Forest Emerald Green `#059669`, while Pulau Pinang is Electric Sky Blue `#0284C7`).
+   - **Main Table Sorted by Cumulative Descending**:
+     - Highest cases on top (Selangor, WP Kuala Lumpur, Johor...).
    - **100% Client-Side / Zero-CORS**: Works immediately on local double-click and on GitHub Pages.
 
 ---
 
-## 📊 Today's Extracted Baseline (31 Aug 2026 / ME 35)
+## 📊 Latest Extracted Baseline (01 Nov 2026 / ME 44)
 
-| # | Negeri | Kes Harian (31 Aug 2026) | Jumlah Kes Terkumpul (YTD) | % Sumbangan |
+| # | Negeri | Kes Harian (01 Nov 2026) | Jumlah Kes Terkumpul (YTD) | % Sumbangan |
 | -: | :--- | :---: | :---: | :---: |
-| 1 | **SELANGOR** | 94 | 27,371 | 42.83% |
-| 2 | **WILAYAH PERSEKUTUAN** | 36 | 11,109 | 17.38% |
-| 3 | **JOHOR** | 76 | 10,014 | 15.67% |
-| 4 | **NEGERI SEMBILAN** | 13 | 4,038 | 6.32% |
-| 5 | **SABAH** | 11 | 3,951 | 6.18% |
-| 6 | **PERAK** | 0 | 1,942 | 3.04% |
-| 7 | **KELANTAN** | 13 | 1,416 | 2.22% |
-| 8 | **PULAU PINANG** | 4 | 998 | 1.56% |
-| 9 | **PAHANG** | 0 | 732 | 1.15% |
-| 10 | **SARAWAK** | 4 | 696 | 1.09% |
-| 11 | **KEDAH** | 2 | 655 | 1.02% |
-| 12 | **MELAKA** | 4 | 527 | 0.82% |
-| 13 | **TERENGGANU** | 3 | 266 | 0.42% |
-| 14 | **PERLIS** | 0 | 172 | 0.27% |
-| 15 | **WILAYAH PERSEKUTUAN LABUAN** | 0 | 15 | 0.02% |
-| ★ | **MALAYSIA (TOTAL)** | **260** | **63,902** | **100.0%** |
+| 1 | **SELANGOR** | 63 | 33,400 | 41.82% |
+| 2 | **WILAYAH PERSEKUTUAN** | 21 | 13,306 | 16.66% |
+| 3 | **JOHOR** | 42 | 13,068 | 16.36% |
+| 4 | **NEGERI SEMBILAN** | 14 | 5,297 | 6.63% |
+| 5 | **SABAH** | 13 | 4,713 | 5.90% |
+| 6 | **PERAK** | 14 | 2,595 | 3.25% |
+| 7 | **KELANTAN** | 2 | 1,927 | 2.41% |
+| 8 | **PULAU PINANG** | 6 | 1,320 | 1.65% |
+| 9 | **SARAWAK** | 6 | 999 | 1.25% |
+| 10 | **PAHANG** | 6 | 957 | 1.20% |
+| 11 | **KEDAH** | 0 | 759 | 0.95% |
+| 12 | **MELAKA** | 0 | 699 | 0.88% |
+| 13 | **TERENGGANU** | 0 | 617 | 0.77% |
+| 14 | **PERLIS** | 0 | 199 | 0.25% |
+| 15 | **WILAYAH PERSEKUTUAN LABUAN** | 0 | 17 | 0.02% |
+| ★ | **MALAYSIA (TOTAL)** | **187** | **79,873** | **100.0%** |
 
 ---
 
@@ -87,10 +88,12 @@ Then open `http://localhost:8000` in your browser.
 
 ## ⚡ Free Daily Cloud Automation (GitHub Actions & Pages)
 
-### Automatic Daily Run
+### Automatic Daily Runs (Twice Per Day)
 A GitHub Actions workflow is located at `.github/workflows/daily_scrape.yml`.
-- Runs automatically everyday at **02:00 UTC (10:00 AM MYT)**.
-- Commits and pushes any updated data files to your repository.
+- **Morning Check**: **00:15 UTC (8:15 AM MYT)**
+- **Afternoon Check**: **05:15 UTC (1:15 PM MYT)** (post-midday release)
+- Cron expression: `15 0,5 * * *`
+- Commits and pushes any updated data files to your repository automatically.
 - Costs **$0.00 / RM 0.00** (Free on public repositories).
 
 ### Host Live Dashboard on GitHub Pages (Free)

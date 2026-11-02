@@ -12,7 +12,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <link rel="stylesheet" href="style.css?v=20260903" />
+  <link rel="stylesheet" href="style.css?v=20261102_2x2_strict" />
   <!-- Immediate Theme & Language Initialization -->
   <script>
     (function() {
@@ -207,8 +207,8 @@
         <div class="multi-state-presets">
           <span class="preset-label" id="lbl-quick-presets">Pilihan Pantas:</span>
           <button type="button" class="preset-btn" id="btn-preset-top3" onclick="applyStatePreset('top3')">Top 3</button>
-          <button type="button" class="preset-btn active" id="btn-preset-top5" onclick="applyStatePreset('top5')">Top 5</button>
-          <button type="button" class="preset-btn" id="btn-preset-perak" onclick="applyStatePreset('perak')">Perak (±2)</button>
+          <button type="button" class="preset-btn" id="btn-preset-top5" onclick="applyStatePreset('top5')">Top 5</button>
+          <button type="button" class="preset-btn active" id="btn-preset-perak" onclick="applyStatePreset('perak')">Perak (±2)</button>
           <button type="button" class="preset-btn" id="btn-preset-bot3" onclick="applyStatePreset('bot3')">Bottom 3</button>
           <button type="button" class="preset-btn" id="btn-preset-bot5" onclick="applyStatePreset('bot5')">Bottom 5</button>
           <button type="button" class="preset-btn" id="btn-preset-all" onclick="applyStatePreset('all')">Pilih Semua (15)</button>
@@ -221,38 +221,10 @@
       </div>
     </section>
 
-    <!-- Visualizations Section -->
+    <!-- Visualizations Section (2x2 Grid) -->
     <section class="charts-grid">
-      <!-- Weekly Epid Trend Chart -->
-      <div class="chart-panel">
-        <div class="panel-header">
-          <div>
-            <h2 class="panel-title" id="weekly-chart-title">Trend Mingguan (Minggu Epidemiologi)</h2>
-            <p class="panel-subtitle" id="weekly-chart-subtitle">Jumlah kes denggi mingguan berdasarkan Takwim Minggu Epid Malaysia</p>
-          </div>
-          <span class="panel-tag" id="weekly-chart-tag">JUMLAH KESELURUHAN</span>
-        </div>
-        <div class="chart-wrapper">
-          <canvas id="weeklyTrendChart"></canvas>
-        </div>
-      </div>
-
-      <!-- Daily Trend Chart -->
-      <div class="chart-panel">
-        <div class="panel-header">
-          <div>
-            <h2 class="panel-title" id="daily-chart-title">Trend Kes Harian</h2>
-            <p class="panel-subtitle" id="daily-chart-subtitle">Pergerakan kes denggi harian dari tarikh ke tarikh</p>
-          </div>
-          <span class="panel-tag" id="daily-chart-tag">JUMLAH KESELURUHAN</span>
-        </div>
-        <div class="chart-wrapper">
-          <canvas id="dailyTrendChart"></canvas>
-        </div>
-      </div>
-
-      <!-- NA / Unreleased Dates Column -->
-      <div class="chart-panel na-dates-panel">
+      <!-- 1. Top-Left: NA / Unreleased Dates Column -->
+      <div class="chart-panel na-dates-panel" id="na-dates-panel">
         <div class="panel-header">
           <div>
             <h2 class="panel-title" id="lbl-na-panel-title">Tarikh N/A (Tiada Buletin)</h2>
@@ -263,8 +235,72 @@
         <div class="na-dates-list" id="na-dates-container">
           <!-- Populated dynamically in app.js -->
         </div>
-        <div class="na-panel-footer" id="lbl-na-panel-note">
+        <div class="panel-card-footer" id="lbl-na-panel-note">
           * Buletin rasmi iDengue tidak diterbitkan bagi tarikh-tarikh ini. Nilai dijana secara retrospektif daripada perbezaan kes kumulatif.
+        </div>
+      </div>
+
+      <!-- 2. Top-Right: Weekly Epid Total Cases Chart -->
+      <div class="chart-panel" id="weekly-chart-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title" id="weekly-chart-title">Trend Mingguan (Minggu Epidemiologi)</h2>
+            <p class="panel-subtitle" id="weekly-chart-subtitle">Jumlah kes denggi mingguan berdasarkan Takwim Minggu Epid Malaysia</p>
+          </div>
+          <span class="panel-tag" id="weekly-chart-tag">JUMLAH KESELURUHAN</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="weeklyTrendChart"></canvas>
+        </div>
+        <div class="panel-card-footer" id="lbl-weekly-panel-note">
+          * Jumlah kes mingguan diselaraskan dengan Takwim Minggu Epidemiologi rasmi CPRC KKM.
+        </div>
+      </div>
+
+      <!-- 3. Bottom-Left: Daily Total Cases Chart -->
+      <div class="chart-panel" id="daily-chart-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title" id="daily-chart-title">Trend Kes Harian</h2>
+            <p class="panel-subtitle" id="daily-chart-subtitle">Pergerakan kes denggi harian dari tarikh ke tarikh</p>
+          </div>
+          <span class="panel-tag" id="daily-chart-tag">JUMLAH KESELURUHAN</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="dailyTrendChart"></canvas>
+        </div>
+        <div class="panel-card-footer" id="lbl-daily-panel-note">
+          * Trajektori kes harian dilaporkan iDengue sepanjang sela 14 hari kalendar terkini.
+        </div>
+      </div>
+
+      <!-- 4. Bottom-Right: Daily Cases 14-Day Moving Average & Projection Chart -->
+      <div class="chart-panel" id="daily-ma-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title" id="daily-ma-chart-title">Trend Purata Bergerak 14 Hari & Unjuran 7 Hari</h2>
+            <p class="panel-subtitle" id="daily-ma-chart-subtitle">7 hari sebelum berserta unjuran trajektori purata 14 hari bagi 7 hari seterusnya</p>
+          </div>
+          <div class="panel-controls-cluster">
+            <!-- Range Selection Toggle -->
+            <div class="bar-metric-toggle">
+              <button type="button" class="metric-btn active" id="btn-ma-range-7proj" onclick="setDailyMARange('7proj')">7H + 7H Unjuran</button>
+              <button type="button" class="metric-btn" id="btn-ma-range-30" onclick="setDailyMARange(30)">30 Hari</button>
+              <button type="button" class="metric-btn" id="btn-ma-range-all" onclick="setDailyMARange('all')">Semua</button>
+            </div>
+            <!-- Display Mode (Bar + MA vs Line + MA) -->
+            <div class="bar-metric-toggle" title="Tukar Format Paparan Graf">
+              <button type="button" class="metric-btn active" id="btn-ma-mode-combo" onclick="setDailyMAMode('combo')">Bar + Purata</button>
+              <button type="button" class="metric-btn" id="btn-ma-mode-line" onclick="setDailyMAMode('line')">Garis + Purata</button>
+            </div>
+            <span class="panel-tag" id="daily-ma-chart-tag">JUMLAH KESELURUHAN</span>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="dailyMovingAvgChart"></canvas>
+        </div>
+        <div class="panel-card-footer" id="lbl-daily-ma-note">
+          * Purata bergerak 14 hari (7 hari sebelum) berserta unjuran trajektori tren 7 hari seterusnya.
         </div>
       </div>
 

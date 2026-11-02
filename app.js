@@ -19,6 +19,9 @@ let currentLang = 'ms'; // 'ms' | 'en'
 let selectedComparisonStates = new Set(); // Multi-state selection for comparison mode
 let weeklyChart = null;
 let dailyChart = null;
+let dailyMovingAvgChart = null;
+let currentDailyMARange = '7proj'; // '7proj' | 30 | 'all'
+let currentDailyMAMode = 'combo'; // 'combo' | 'line'
 let stateComparisonChart = null;
 
 // Official Population Data (DOSM / KKM Demographic Baseline Estimates)
@@ -98,10 +101,26 @@ const TRANSLATIONS = {
     weekly_title_state: 'Trend Mingguan ({state})',
     weekly_title_compare: 'Trend Mingguan Mengikut {count} Negeri Pilihan',
     weekly_subtitle: 'Jumlah kes denggi mingguan berdasarkan Takwim Minggu Epid Malaysia',
+    weekly_panel_note: '* Jumlah kes mingguan diselaraskan dengan Takwim Minggu Epidemiologi rasmi CPRC KKM (Ahad – Sabtu).',
+    daily_panel_note: '* Trajektori kes harian dilaporkan iDengue sepanjang sela 14 hari kalendar terkini.',
     daily_title_total: 'Jumlah Keseluruhan Harian (Malaysia)',
     daily_title_state: 'Trend Harian ({state})',
     daily_title_compare: 'Trend Harian Mengikut {count} Negeri Pilihan',
     daily_subtitle: 'Pergerakan kes denggi harian dari tarikh ke tarikh',
+    daily_ma_title_total: 'Trend Purata Bergerak 14 Hari & Unjuran 7 Hari (Malaysia)',
+    daily_ma_title_state: 'Trend Purata Bergerak 14 Hari & Unjuran 7 Hari ({state})',
+    daily_ma_title_compare: 'Unjuran Purata Bergerak 14 Hari Mengikut {count} Negeri Pilihan',
+    daily_ma_subtitle: '7 hari sebelum berserta unjuran trajektori purata 14 hari (berasaskan tren 28 hari)',
+    daily_ma_note: '* Purata bergerak 14 hari (7 hari sebelum) berserta unjuran trajektori 7 hari berasaskan tren data 28 hari.',
+    daily_ma_legend_daily: 'Kes Harian (Sebenar)',
+    daily_ma_legend_daily_proj: 'Unjuran Kes Harian',
+    daily_ma_legend_ma: 'Purata 14 Hari (Sebenar)',
+    daily_ma_legend_ma_proj: 'Unjuran Purata 14 Hari',
+    btn_range_7proj: '7H + 7H Unjuran',
+    btn_range_30: '30 Hari',
+    btn_range_all: 'Semua',
+    btn_mode_combo: 'Bar + Purata',
+    btn_mode_line: 'Garis + Purata',
     na_panel_title: 'Tarikh N/A (Tiada Buletin)',
     na_panel_subtitle: 'Buletin rasmi tidak diterbitkan iDengue',
     na_badge_dates: '{count} Tarikh N/A',
@@ -193,10 +212,26 @@ const TRANSLATIONS = {
     weekly_title_state: 'Weekly Trend ({state})',
     weekly_title_compare: 'Weekly Trend Across {count} Selected States',
     weekly_subtitle: 'Weekly dengue case counts aligned with Malaysia Epidemiological Calendar',
+    weekly_panel_note: '* Weekly cases aggregated by official MOH CPRC Epidemiological Weeks (Sunday – Saturday).',
+    daily_panel_note: '* Trajectory of daily cases reported by iDengue over the latest 14 calendar days.',
     daily_title_total: 'Daily Total Cases (Malaysia)',
     daily_title_state: 'Daily Trend ({state})',
     daily_title_compare: 'Daily Trend Across {count} Selected States',
     daily_subtitle: 'Daily case trajectory over time',
+    daily_ma_title_total: '14-Day Moving Average & 7-Day Projection (Malaysia Total)',
+    daily_ma_title_state: '14-Day Moving Average & 7-Day Projection ({state})',
+    daily_ma_title_compare: '14-Day Moving Average & 7-Day Projection Across {count} Selected States',
+    daily_ma_subtitle: '7 days before with 7-day projected trajectory for 14-day MA (based on 28-day baseline)',
+    daily_ma_note: '* 14-day moving average (7 days before) with 7-day forward trajectory calculated from 28-day baseline data.',
+    daily_ma_legend_daily: 'Daily Cases (Observed)',
+    daily_ma_legend_daily_proj: 'Projected Daily Cases',
+    daily_ma_legend_ma: '14-Day MA (Observed)',
+    daily_ma_legend_ma_proj: 'Projected 14-Day MA',
+    btn_range_7proj: '7D + 7D Proj',
+    btn_range_30: '30 Days',
+    btn_range_all: 'All',
+    btn_mode_combo: 'Bar + MA',
+    btn_mode_line: 'Line + MA',
     na_panel_title: 'N/A Dates (Unreleased)',
     na_panel_subtitle: 'Official iDengue bulletins unreleased for these dates',
     na_badge_dates: '{count} N/A Dates',
@@ -240,25 +275,47 @@ const TRANSLATIONS = {
   }
 };
 
-// Palette for 15 states + Malaysia total
-const STATE_COLORS = {
-  'SELANGOR': '#EF4444',
-  'WILAYAH PERSEKUTUAN': '#F59E0B',
-  'JOHOR': '#06B6D4',
-  'NEGERI SEMBILAN': '#8B5CF6',
-  'SABAH': '#10B981',
-  'PERAK': '#000000',
-  'KELANTAN': '#EC4899',
-  'PULAU PINANG': '#14B8A6',
-  'PAHANG': '#F97316',
-  'SARAWAK': '#84CC16',
-  'KEDAH': '#6366F1',
-  'MELAKA': '#EAB308',
-  'TERENGGANU': '#A855F7',
-  'PERLIS': '#94A3B8',
-  'WILAYAH PERSEKUTUAN LABUAN': '#2DD4BF',
-  'MALAYSIA': '#06B6D4',
+// Vibrant, high-contrast palette for 15 states + Malaysia total
+// Sequenced so adjacent rank states never share similar hues
+const STATE_COLORS_LIGHT = {
+  'SELANGOR': '#DC2626',                   // Vivid Crimson Red
+  'WILAYAH PERSEKUTUAN': '#EA580C',        // Flame Orange
+  'JOHOR': '#2563EB',                      // Royal Blue
+  'NEGERI SEMBILAN': '#7C3AED',            // Deep Violet / Purple
+  'SABAH': '#059669',                      // Forest Emerald Green
+  'PERAK': '#0F172A',                      // Jet Black / Obsidian
+  'KELANTAN': '#E11D48',                   // Vivid Rose / Ruby Red
+  'PULAU PINANG': '#0284C7',               // Electric Sky Blue (distinct from Sabah green)
+  'SARAWAK': '#D97706',                    // Warm Amber-Gold
+  'PAHANG': '#C2410C',                     // Rust Orange
+  'KEDAH': '#4F46E5',                      // Deep Indigo
+  'MELAKA': '#C026D3',                     // Vibrant Magenta / Fuchsia
+  'TERENGGANU': '#0D9488',                 // Dark Teal
+  'PERLIS': '#475569',                     // Slate Steel
+  'WILAYAH PERSEKUTUAN LABUAN': '#65A30D', // Olive-Lime
+  'MALAYSIA': '#0284C7',
 };
+
+const STATE_COLORS_DARK = {
+  'SELANGOR': '#F87171',                   // Bright Red
+  'WILAYAH PERSEKUTUAN': '#FB923C',        // Bright Orange
+  'JOHOR': '#60A5FA',                      // Sky Blue
+  'NEGERI SEMBILAN': '#A78BFA',            // Bright Violet
+  'SABAH': '#34D399',                      // Mint Emerald Green
+  'PERAK': '#F8FAFC',                      // Pure Platinum White
+  'KELANTAN': '#FB7185',                   // Bright Rose
+  'PULAU PINANG': '#38BDF8',               // Vibrant Cyan-Blue
+  'SARAWAK': '#FBBF24',                    // Amber Gold
+  'PAHANG': '#FB923C',                     // Tangerine
+  'KEDAH': '#818CF8',                      // Periwinkle Indigo
+  'MELAKA': '#F472B6',                     // Neon Pink-Magenta
+  'TERENGGANU': '#2DD4BF',                 // Bright Teal
+  'PERLIS': '#94A3B8',                     // Light Slate
+  'WILAYAH PERSEKUTUAN LABUAN': '#A3E635', // Electric Lime
+  'MALAYSIA': '#38BDF8',
+};
+
+const STATE_COLORS = STATE_COLORS_LIGHT;
 
 const DEFAULT_COLOR_PALETTE = [
   '#EF4444', '#F59E0B', '#06B6D4', '#8B5CF6', '#10B981',
@@ -395,6 +452,16 @@ function applyStaticTranslations() {
   setTxt('lbl-zoom-max', t.zoom_max_lbl);
   setTxt('btn-zoom-reset', t.zoom_reset);
 
+  setTxt('daily-ma-chart-subtitle', t.daily_ma_subtitle);
+  setTxt('btn-ma-range-7proj', t.btn_range_7proj);
+  setTxt('btn-ma-range-30', t.btn_range_30);
+  setTxt('btn-ma-range-all', t.btn_range_all);
+  setTxt('btn-ma-mode-combo', t.btn_mode_combo);
+  setTxt('btn-ma-mode-line', t.btn_mode_line);
+  setHtml('lbl-daily-ma-note', t.daily_ma_note);
+  setHtml('lbl-weekly-panel-note', t.weekly_panel_note);
+  setHtml('lbl-daily-panel-note', t.daily_panel_note);
+
   setTxt('lbl-table-badge', t.table_badge);
   setTxt('lbl-na-panel-title', t.na_panel_title);
   setTxt('lbl-na-panel-subtitle', t.na_panel_subtitle);
@@ -440,10 +507,8 @@ function getChartThemeColors() {
 }
 
 function getStateColor(stateName, isDark = false) {
-  if (stateName === 'PERAK') {
-    return isDark ? '#E2E8F0' : '#000000';
-  }
-  return STATE_COLORS[stateName] || '#06B6D4';
+  const palette = isDark ? STATE_COLORS_DARK : STATE_COLORS_LIGHT;
+  return palette[stateName] || (isDark ? '#38BDF8' : '#0284C7');
 }
 
 async function initData() {
@@ -830,8 +895,15 @@ function sortTable(column) {
 function initComparisonStates() {
   if (!appData || !appData.latest || !appData.latest.states) return;
   const sorted = [...appData.latest.states].sort((a, b) => b.cumulative_cases - a.cumulative_cases);
-  // Default to Top 5 states for clear, readable comparison
-  selectedComparisonStates = new Set(sorted.slice(0, 5).map(s => s.state));
+  // Default to Perak (±2) preset
+  const idx = sorted.findIndex(s => s.state === 'PERAK');
+  if (idx !== -1) {
+    const start = Math.max(0, idx - 2);
+    const end = Math.min(sorted.length, idx + 3);
+    selectedComparisonStates = new Set(sorted.slice(start, end).map(s => s.state));
+  } else {
+    selectedComparisonStates = new Set(['PERAK']);
+  }
   renderStateChips();
 }
 
@@ -1051,6 +1123,8 @@ function updateCharts(selectedState) {
   const dailyTag = document.getElementById('daily-chart-tag');
   const weeklyTitle = document.getElementById('weekly-chart-title');
   const dailyTitle = document.getElementById('daily-chart-title');
+  const dailyMATag = document.getElementById('daily-ma-chart-tag');
+  const dailyMATitle = document.getElementById('daily-ma-chart-title');
 
   if (isCompareMode) {
     const count = selectedComparisonStates ? selectedComparisonStates.size : 0;
@@ -1059,12 +1133,16 @@ function updateCharts(selectedState) {
     dailyTag.textContent = tagText;
     weeklyTitle.textContent = t.weekly_title_compare.replace('{count}', count);
     dailyTitle.textContent = t.daily_title_compare.replace('{count}', count);
+    if (dailyMATag) dailyMATag.textContent = tagText;
+    if (dailyMATitle) dailyMATitle.textContent = t.daily_ma_title_compare.replace('{count}', count);
   } else {
     const totalTag = currentLang === 'en' ? 'NATIONAL TOTAL' : 'JUMLAH KESELURUHAN';
     weeklyTag.textContent = selectedState === 'MALAYSIA' ? totalTag : selectedState;
     dailyTag.textContent = selectedState === 'MALAYSIA' ? totalTag : selectedState;
     weeklyTitle.textContent = selectedState === 'MALAYSIA' ? t.weekly_title_total : t.weekly_title_state.replace('{state}', selectedState);
     dailyTitle.textContent = selectedState === 'MALAYSIA' ? t.daily_title_total : t.daily_title_state.replace('{state}', selectedState);
+    if (dailyMATag) dailyMATag.textContent = selectedState === 'MALAYSIA' ? totalTag : selectedState;
+    if (dailyMATitle) dailyMATitle.textContent = selectedState === 'MALAYSIA' ? t.daily_ma_title_total : t.daily_ma_title_state.replace('{state}', selectedState);
   }
 
   // 1. Weekly Chart
@@ -1072,6 +1150,9 @@ function updateCharts(selectedState) {
 
   // 2. Daily Chart
   renderDailyChart(selectedState, isCompareMode);
+
+  // 3. Daily Moving Average Chart (14-Day MA)
+  renderDailyMovingAvgChart(selectedState, isCompareMode);
 
   // 3. NA Dates List
   renderNADatesList();
@@ -1347,6 +1428,455 @@ function renderDailyChart(selectedState, isCompareMode) {
   renderNADatesList();
 }
 
+function setDailyMARange(range) {
+  currentDailyMARange = range;
+  document.getElementById('btn-ma-range-7proj')?.classList.toggle('active', range === '7proj');
+  document.getElementById('btn-ma-range-30')?.classList.toggle('active', range === 30 || range === '30');
+  document.getElementById('btn-ma-range-all')?.classList.toggle('active', range === 'all');
+  const selectedState = document.getElementById('state-filter-select')?.value || 'MALAYSIA';
+  renderDailyMovingAvgChart(selectedState, currentGraphMode === 'comparison');
+}
+
+function setDailyMAMode(mode) {
+  currentDailyMAMode = mode;
+  document.getElementById('btn-ma-mode-combo')?.classList.toggle('active', mode === 'combo');
+  document.getElementById('btn-ma-mode-line')?.classList.toggle('active', mode === 'line');
+  const selectedState = document.getElementById('state-filter-select')?.value || 'MALAYSIA';
+  renderDailyMovingAvgChart(selectedState, currentGraphMode === 'comparison');
+}
+
+window.setDailyMARange = setDailyMARange;
+window.setDailyMAMode = setDailyMAMode;
+window.renderDailyMovingAvgChart = renderDailyMovingAvgChart;
+
+function renderDailyMovingAvgChart(selectedState, isCompareMode) {
+  const canvasEl = document.getElementById('dailyMovingAvgChart');
+  if (!canvasEl) return;
+  const ctx = canvasEl.getContext('2d');
+  if (dailyMovingAvgChart) dailyMovingAvgChart.destroy();
+
+  if (!appData || !appData.dates || appData.dates.length === 0) return;
+  const allDates = appData.dates;
+  const retroDates = new Set(appData.retrospective_dates || []);
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.ms;
+  const tc = getChartThemeColors();
+
+  // Helper to extract daily cases for any date & state
+  const getDailyVal = (dt, state) => {
+    const dayObj = appData.daily_matrix[dt] || {};
+    if (state === 'MALAYSIA') {
+      return dayObj['MALAYSIA'] !== undefined ? dayObj['MALAYSIA'] : 0;
+    }
+    return dayObj[state] !== undefined ? dayObj[state] : 0;
+  };
+
+  // 14-day rolling average lookup from allDates
+  const calcMA14ForDate = (dt, state) => {
+    const idx = allDates.indexOf(dt);
+    if (idx === -1) return 0;
+    let sum = 0, count = 0;
+    for (let i = 0; i < 14; i++) {
+      const pIdx = idx - i;
+      if (pIdx >= 0) {
+        sum += Number(getDailyVal(allDates[pIdx], state)) || 0;
+        count++;
+      }
+    }
+    return count > 0 ? +(sum / count).toFixed(1) : 0;
+  };
+
+  let datasets = [];
+  let displayLabels = [];
+  const is7ProjMode = (currentDailyMARange === '7proj');
+
+  if (is7ProjMode) {
+    // 7 days before + 7 days projection
+    const pastDates = allDates.slice(-7);
+    const latestDateStr = allDates[allDates.length - 1];
+    const [y, m, d] = latestDateStr.split('-').map(Number);
+    const latestDate = new Date(Date.UTC(y, m - 1, d));
+    const futureDates = [];
+    for (let k = 1; k <= 7; k++) {
+      const fDate = new Date(latestDate);
+      fDate.setUTCDate(latestDate.getUTCDate() + k);
+      futureDates.push(fDate.toISOString().slice(0, 10));
+    }
+    const allWindowDates = [...pastDates, ...futureDates];
+    const futureSet = new Set(futureDates);
+
+    displayLabels = allWindowDates.map(dt => {
+      if (futureSet.has(dt)) {
+        return currentLang === 'en' ? `${dt} (Proj)` : `${dt} (Unjuran)`;
+      }
+      return retroDates.has(dt) ? `${dt} *` : dt;
+    });
+
+    const computeStateSeries = (st) => {
+      // Consider 28 days of historical data for robust baseline trend projection
+      const trendWindowDays = Math.min(28, allDates.length);
+      const trendDates = allDates.slice(-trendWindowDays);
+      const trendDaily = trendDates.map(dt => getDailyVal(dt, st));
+      const N = trendWindowDays;
+
+      let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+      for (let i = 0; i < N; i++) {
+        sumX += i;
+        sumY += trendDaily[i];
+        sumXY += i * trendDaily[i];
+        sumXX += i * i;
+      }
+      const slope = (N * sumXY - sumX * sumY) / (N * sumXX - sumX * sumX);
+      const intercept = (sumY - slope * sumX) / N;
+
+      // Project next 7 days daily cases using the 28-day baseline trend
+      const futureDaily = [];
+      for (let k = 0; k < 7; k++) {
+        futureDaily.push(Math.max(0, Math.round(intercept + slope * (N + k))));
+      }
+
+      // Past 7 observed days for display on chart
+      const recentDaily = pastDates.map(dt => getDailyVal(dt, st));
+      const obsMA = pastDates.map(dt => calcMA14ForDate(dt, st));
+
+      // Calculate future 14-day moving average using 14-day rolling window
+      const projMA = [];
+      for (let k = 1; k <= 7; k++) {
+        let sum = 0;
+        const pastNeeded = 14 - k;
+        for (let i = 0; i < pastNeeded; i++) {
+          sum += Number(getDailyVal(allDates[allDates.length - 1 - i], st)) || 0;
+        }
+        for (let f = 0; f < k; f++) {
+          sum += futureDaily[f];
+        }
+        projMA.push(+(sum / 14).toFixed(1));
+      }
+
+      return { recentDaily, futureDaily, obsMA, projMA };
+    };
+
+    if (isCompareMode) {
+      // Comparison Mode: Multi-state observed line + projected line
+      const states = appData.latest.states
+        .map(s => s.state)
+        .filter(st => selectedComparisonStates.has(st));
+
+      states.forEach(st => {
+        const color = getStateColor(st, tc.isDark);
+        const { obsMA, projMA } = computeStateSeries(st);
+
+        // Observed line
+        datasets.push({
+          type: 'line',
+          label: `${st} (14D MA)`,
+          data: [...obsMA, ...Array(7).fill(null)],
+          borderColor: color,
+          backgroundColor: color,
+          borderWidth: 2.5,
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          tension: 0.3,
+          fill: false,
+          order: 1
+        });
+
+        // Projected line (connected seamlessly at day 7)
+        datasets.push({
+          type: 'line',
+          label: `${st} (${currentLang === 'en' ? 'Projected' : 'Unjuran'})`,
+          data: [...Array(6).fill(null), obsMA[obsMA.length - 1], ...projMA],
+          borderColor: color,
+          backgroundColor: color,
+          borderWidth: 2.2,
+          borderDash: [5, 4],
+          pointRadius: 3,
+          pointStyle: 'rectRot',
+          pointHoverRadius: 6,
+          tension: 0.3,
+          fill: false,
+          order: 1
+        });
+      });
+    } else {
+      // Single state or MALAYSIA Total
+      const stateLabel = selectedState === 'MALAYSIA' ? (currentLang === 'en' ? 'Malaysia' : 'Malaysia') : selectedState;
+      const { recentDaily, futureDaily, obsMA, projMA } = computeStateSeries(selectedState);
+      const maColor = tc.isDark ? '#38BDF8' : '#0284C7';
+      const projColor = tc.isDark ? '#FBBF24' : '#D97706';
+
+      // 1. Observed 14D MA (Solid)
+      datasets.push({
+        type: 'line',
+        label: `${t.daily_ma_legend_ma} (${stateLabel})`,
+        data: [...obsMA, ...Array(7).fill(null)],
+        borderColor: maColor,
+        backgroundColor: tc.isDark ? 'rgba(56, 189, 248, 0.1)' : 'rgba(2, 132, 199, 0.08)',
+        borderWidth: 3,
+        tension: 0.3,
+        pointRadius: 3.5,
+        pointHoverRadius: 6,
+        pointBackgroundColor: maColor,
+        fill: false,
+        order: 1
+      });
+
+      // 2. Projected 14D MA (Dashed, connected at index 6)
+      datasets.push({
+        type: 'line',
+        label: `${t.daily_ma_legend_ma_proj} (${stateLabel})`,
+        data: [...Array(6).fill(null), obsMA[obsMA.length - 1], ...projMA],
+        borderColor: projColor,
+        backgroundColor: tc.isDark ? 'rgba(251, 191, 36, 0.1)' : 'rgba(217, 119, 6, 0.08)',
+        borderWidth: 2.5,
+        borderDash: [5, 4],
+        tension: 0.3,
+        pointRadius: 3.5,
+        pointStyle: 'rectRot',
+        pointHoverRadius: 6,
+        pointBackgroundColor: projColor,
+        fill: false,
+        order: 1
+      });
+
+      if (currentDailyMAMode === 'combo') {
+        // Daily Observed Bars
+        datasets.push({
+          type: 'bar',
+          label: `${t.daily_ma_legend_daily} (${stateLabel})`,
+          data: [...recentDaily, ...Array(7).fill(null)],
+          backgroundColor: tc.isDark ? 'rgba(239, 68, 68, 0.45)' : 'rgba(239, 68, 68, 0.3)',
+          borderColor: tc.isDark ? 'rgba(248, 113, 113, 0.8)' : 'rgba(220, 38, 38, 0.6)',
+          borderWidth: 1,
+          borderRadius: 2,
+          categoryPercentage: 0.8,
+          barPercentage: 0.88,
+          order: 2
+        });
+        // Daily Projected Bars
+        datasets.push({
+          type: 'bar',
+          label: `${t.daily_ma_legend_daily_proj} (${stateLabel})`,
+          data: [...Array(7).fill(null), ...futureDaily],
+          backgroundColor: tc.isDark ? 'rgba(245, 158, 11, 0.18)' : 'rgba(217, 119, 6, 0.12)',
+          borderColor: tc.isDark ? 'rgba(251, 191, 36, 0.75)' : 'rgba(217, 119, 6, 0.65)',
+          borderWidth: 1,
+          borderRadius: 2,
+          categoryPercentage: 0.8,
+          barPercentage: 0.88,
+          order: 2
+        });
+      } else {
+        // Line mode
+        datasets.push({
+          type: 'line',
+          label: `${t.daily_ma_legend_daily} (${stateLabel})`,
+          data: [...recentDaily, ...Array(7).fill(null)],
+          borderColor: tc.isDark ? 'rgba(248, 113, 113, 0.65)' : 'rgba(220, 38, 38, 0.55)',
+          backgroundColor: tc.isDark ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.06)',
+          borderWidth: 1.5,
+          tension: 0.25,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: '#EF4444',
+          fill: true,
+          order: 2
+        });
+        datasets.push({
+          type: 'line',
+          label: `${t.daily_ma_legend_daily_proj} (${stateLabel})`,
+          data: [...Array(6).fill(null), recentDaily[recentDaily.length - 1], ...futureDaily],
+          borderColor: tc.isDark ? 'rgba(251, 191, 36, 0.65)' : 'rgba(217, 119, 6, 0.55)',
+          backgroundColor: tc.isDark ? 'rgba(245, 158, 11, 0.08)' : 'rgba(217, 119, 6, 0.05)',
+          borderWidth: 1.5,
+          borderDash: [3, 3],
+          tension: 0.25,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: '#F59E0B',
+          fill: true,
+          order: 2
+        });
+      }
+    }
+  } else {
+    // 30 days or all historical mode
+    let dateKeys = [];
+    if (currentDailyMARange === 30 || currentDailyMARange === '30') {
+      dateKeys = allDates.slice(-30);
+    } else {
+      dateKeys = [...allDates];
+    }
+    displayLabels = dateKeys.map(d => retroDates.has(d) ? `${d} *` : d);
+
+    if (isCompareMode) {
+      const states = appData.latest.states
+        .map(s => s.state)
+        .filter(st => selectedComparisonStates.has(st));
+
+      datasets = states.map(st => {
+        const color = getStateColor(st, tc.isDark);
+        const maData = dateKeys.map(dt => calcMA14ForDate(dt, st));
+        return {
+          type: 'line',
+          label: `${st} (14D MA)`,
+          data: maData,
+          borderColor: color,
+          backgroundColor: color,
+          borderWidth: 2.5,
+          pointRadius: dateKeys.length > 35 ? 1.5 : 3,
+          pointHoverRadius: 6,
+          tension: 0.35,
+          fill: false
+        };
+      });
+    } else {
+      const stateLabel = selectedState === 'MALAYSIA' ? (currentLang === 'en' ? 'Malaysia' : 'Malaysia') : selectedState;
+      const dailyValues = dateKeys.map(dt => getDailyVal(dt, selectedState));
+      const maValues = dateKeys.map(dt => calcMA14ForDate(dt, selectedState));
+      const maColor = tc.isDark ? '#38BDF8' : '#0284C7';
+
+      datasets = [
+        {
+          type: 'line',
+          label: `${t.daily_ma_legend_ma} (${stateLabel})`,
+          data: maValues,
+          borderColor: maColor,
+          backgroundColor: tc.isDark ? 'rgba(56, 189, 248, 0.1)' : 'rgba(2, 132, 199, 0.08)',
+          borderWidth: 3,
+          tension: 0.35,
+          pointRadius: dateKeys.length > 35 ? 1.5 : 3.5,
+          pointHoverRadius: 6,
+          pointBackgroundColor: maColor,
+          fill: false,
+          order: 1
+        },
+        currentDailyMAMode === 'combo' ? {
+          type: 'bar',
+          label: `${t.daily_ma_legend_daily} (${stateLabel})`,
+          data: dailyValues,
+          backgroundColor: tc.isDark ? 'rgba(239, 68, 68, 0.4)' : 'rgba(239, 68, 68, 0.28)',
+          borderColor: tc.isDark ? 'rgba(248, 113, 113, 0.7)' : 'rgba(220, 38, 38, 0.55)',
+          borderWidth: 1,
+          borderRadius: 2,
+          categoryPercentage: 0.82,
+          barPercentage: 0.9,
+          order: 2
+        } : {
+          type: 'line',
+          label: `${t.daily_ma_legend_daily} (${stateLabel})`,
+          data: dailyValues,
+          borderColor: tc.isDark ? 'rgba(248, 113, 113, 0.65)' : 'rgba(220, 38, 38, 0.55)',
+          backgroundColor: tc.isDark ? 'rgba(239, 68, 68, 0.12)' : 'rgba(239, 68, 68, 0.08)',
+          borderWidth: 1.5,
+          borderDash: [3, 2],
+          tension: 0.25,
+          pointRadius: dateKeys.length > 35 ? 1.5 : 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: '#EF4444',
+          fill: true,
+          order: 2
+        }
+      ];
+    }
+  }
+
+  dailyMovingAvgChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: displayLabels, datasets: datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            color: tc.legend,
+            boxWidth: 12,
+            font: { family: 'Plus Jakarta Sans', size: 10.5, weight: '600' }
+          }
+        },
+        tooltip: {
+          backgroundColor: tc.tooltipBg,
+          titleColor: tc.tooltipTitle,
+          bodyColor: tc.tooltipBody,
+          borderColor: tc.tooltipBorder,
+          borderWidth: 1,
+          padding: 10,
+          callbacks: {
+            title: (items) => {
+              if (!items || !items.length) return '';
+              const idx = items[0].dataIndex;
+              return displayLabels[idx] || '';
+            },
+            label: (item) => {
+              const label = item.dataset.label || '';
+              if (item.raw == null) return null;
+              const val = Number(item.raw).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+              return ` ${label}: ${val} ${currentLang === 'en' ? 'cases' : 'kes'}`;
+            },
+            footer: (items) => {
+              if (!items || !items.length) return '';
+              const idx = items[0].dataIndex;
+              if (is7ProjMode && idx >= 7) {
+                return currentLang === 'en'
+                  ? '🔮 7-day projected 14-day MA based on 28-day baseline trend & trailing 14-day window.'
+                  : '🔮 Unjuran purata 14 hari bagi 7 hari seterusnya berasaskan tren 28 hari & kitaran 14 hari.';
+              }
+              return '';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: tc.ticks,
+            font: { family: 'Plus Jakarta Sans', size: 10 },
+            maxRotation: 45,
+            minRotation: 0,
+            maxTicksLimit: 14,
+            autoSkip: true
+          },
+          grid: { color: tc.grid },
+          border: { color: tc.border }
+        },
+        y: {
+          position: 'left',
+          beginAtZero: true,
+          ticks: { color: tc.ticks, font: { family: 'JetBrains Mono', size: 11 } },
+          grid: { color: tc.grid },
+          border: { color: tc.border }
+        },
+        y1: {
+          position: 'right',
+          beginAtZero: true,
+          ticks: { color: tc.ticks, font: { family: 'JetBrains Mono', size: 11 } },
+          grid: { drawOnChartArea: false, color: tc.grid },
+          border: { color: tc.border },
+          afterDataLimits: (scale) => {
+            const y = scale.chart.scales.y;
+            if (y) {
+              scale.min = y.min;
+              scale.max = y.max;
+            }
+          },
+          afterBuildTicks: (scale) => {
+            const y = scale.chart.scales.y;
+            if (y && y.ticks && y.ticks.length > 0) {
+              scale.ticks = y.ticks.map(t => ({ ...t }));
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
 function renderNADatesList() {
   const container = document.getElementById('na-dates-container');
   if (!container || !appData) return;
@@ -1410,6 +1940,7 @@ function renderStateComparisonChart() {
   if (typeof Chart === 'undefined' || !appData || !appData.latest) return;
   const ctx = document.getElementById('stateComparisonChart').getContext('2d');
   const t = TRANSLATIONS[currentLang] || TRANSLATIONS.ms;
+  const tc = getChartThemeColors();
 
   if (stateComparisonChart) stateComparisonChart.destroy();
 
@@ -1440,7 +1971,7 @@ function renderStateComparisonChart() {
     }
     return isCum ? s.cumulative_cases : s.daily_cases;
   });
-  const colors = sortedStates.map(s => STATE_COLORS[s.state] || '#06B6D4');
+  const colors = sortedStates.map(s => getStateColor(s.state, tc.isDark));
 
   const maxVal = Math.max(...rawValues, 10);
   const slider = document.getElementById('zoom-range-slider');
@@ -1454,8 +1985,6 @@ function renderStateComparisonChart() {
   const isLog = (currentComparisonScale === 'logarithmic');
   const isZoomed = (currentComparisonZoom !== 'all');
   const zoomMax = isZoomed ? Number(currentComparisonZoom) : maxVal;
-
-  const tc = getChartThemeColors();
 
   // Configure X Scale
   let xScaleConfig = {
