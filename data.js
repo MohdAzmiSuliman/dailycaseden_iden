@@ -11,72 +11,72 @@ window.IDENGUE_DATA = {
     "cumulative_start_raw": "31 DEC 2023",
     "cumulative_end_date": "2026-11-02",
     "cumulative_end_raw": "02 Nov 2026",
-    "scraped_at": "2026-11-03T14:40:47.782134+08:00",
+    "scraped_at": "2026-11-04T14:08:21.499459+08:00",
     "states": [
       {
         "state": "SELANGOR",
-        "daily_cases": 86,
-        "cumulative_cases": 33486
+        "daily_cases": 110,
+        "cumulative_cases": 33596
       },
       {
         "state": "WILAYAH PERSEKUTUAN",
-        "daily_cases": 26,
-        "cumulative_cases": 13332
+        "daily_cases": 42,
+        "cumulative_cases": 13374
       },
       {
         "state": "JOHOR",
-        "daily_cases": 39,
-        "cumulative_cases": 13107
+        "daily_cases": 29,
+        "cumulative_cases": 13136
       },
       {
         "state": "NEGERI SEMBILAN",
-        "daily_cases": 9,
-        "cumulative_cases": 5306
+        "daily_cases": 20,
+        "cumulative_cases": 5326
       },
       {
         "state": "SABAH",
-        "daily_cases": 11,
-        "cumulative_cases": 4724
+        "daily_cases": 17,
+        "cumulative_cases": 4741
       },
       {
         "state": "PERAK",
-        "daily_cases": 6,
-        "cumulative_cases": 2601
+        "daily_cases": 9,
+        "cumulative_cases": 2610
       },
       {
         "state": "KELANTAN",
-        "daily_cases": 7,
-        "cumulative_cases": 1934
+        "daily_cases": 6,
+        "cumulative_cases": 1940
       },
       {
         "state": "PULAU PINANG",
-        "daily_cases": 5,
-        "cumulative_cases": 1325
+        "daily_cases": 13,
+        "cumulative_cases": 1338
       },
       {
         "state": "SARAWAK",
-        "daily_cases": 3,
-        "cumulative_cases": 1002
+        "daily_cases": 8,
+        "cumulative_cases": 1010
       },
       {
         "state": "PAHANG",
-        "daily_cases": 3,
-        "cumulative_cases": 960
+        "daily_cases": 11,
+        "cumulative_cases": 971
       },
       {
         "state": "KEDAH",
         "daily_cases": 2,
-        "cumulative_cases": 761
+        "cumulative_cases": 763
       },
       {
         "state": "MELAKA",
-        "daily_cases": 2,
-        "cumulative_cases": 701
+        "daily_cases": 1,
+        "cumulative_cases": 702
       },
       {
         "state": "TERENGGANU",
-        "daily_cases": 4,
-        "cumulative_cases": 621
+        "daily_cases": 5,
+        "cumulative_cases": 626
       },
       {
         "state": "PERLIS",
@@ -91,8 +91,8 @@ window.IDENGUE_DATA = {
     ],
     "total": {
       "state": "MALAYSIA",
-      "daily_cases": 203,
-      "cumulative_cases": 80076
+      "daily_cases": 273,
+      "cumulative_cases": 80349
     }
   },
   "dates": [
@@ -1297,22 +1297,22 @@ window.IDENGUE_DATA = {
       "MALAYSIA": 187
     },
     "2026-11-02": {
-      "SELANGOR": 86,
-      "WILAYAH PERSEKUTUAN": 26,
-      "JOHOR": 39,
-      "NEGERI SEMBILAN": 9,
-      "SABAH": 11,
-      "PERAK": 6,
-      "KELANTAN": 7,
-      "PULAU PINANG": 5,
-      "SARAWAK": 3,
-      "PAHANG": 3,
+      "SELANGOR": 110,
+      "WILAYAH PERSEKUTUAN": 42,
+      "JOHOR": 29,
+      "NEGERI SEMBILAN": 20,
+      "SABAH": 17,
+      "PERAK": 9,
+      "KELANTAN": 6,
+      "PULAU PINANG": 13,
+      "SARAWAK": 8,
+      "PAHANG": 11,
       "KEDAH": 2,
-      "MELAKA": 2,
-      "TERENGGANU": 4,
+      "MELAKA": 1,
+      "TERENGGANU": 5,
       "PERLIS": 0,
       "WILAYAH PERSEKUTUAN LABUAN": 0,
-      "MALAYSIA": 203
+      "MALAYSIA": 273
     }
   },
   "history_by_date": {
@@ -7056,72 +7056,72 @@ window.IDENGUE_DATA = {
       "epid_week_label": "ME 44/2026 (01/11 - 07/11)",
       "cumulative_start_date": "2023-12-31",
       "cumulative_end_date": "2026-11-02",
-      "scraped_at": "2026-11-03T14:40:47.782134+08:00",
+      "scraped_at": "2026-11-04T14:08:21.499459+08:00",
       "states": [
         {
           "state": "SELANGOR",
-          "daily_cases": 86,
-          "cumulative_cases": 33486
+          "daily_cases": 110,
+          "cumulative_cases": 33596
         },
         {
           "state": "WILAYAH PERSEKUTUAN",
-          "daily_cases": 26,
-          "cumulative_cases": 13332
+          "daily_cases": 42,
+          "cumulative_cases": 13374
         },
         {
           "state": "JOHOR",
-          "daily_cases": 39,
-          "cumulative_cases": 13107
+          "daily_cases": 29,
+          "cumulative_cases": 13136
         },
         {
           "state": "NEGERI SEMBILAN",
-          "daily_cases": 9,
-          "cumulative_cases": 5306
+          "daily_cases": 20,
+          "cumulative_cases": 5326
         },
         {
           "state": "SABAH",
-          "daily_cases": 11,
-          "cumulative_cases": 4724
+          "daily_cases": 17,
+          "cumulative_cases": 4741
         },
         {
           "state": "PERAK",
-          "daily_cases": 6,
-          "cumulative_cases": 2601
+          "daily_cases": 9,
+          "cumulative_cases": 2610
         },
         {
           "state": "KELANTAN",
-          "daily_cases": 7,
-          "cumulative_cases": 1934
+          "daily_cases": 6,
+          "cumulative_cases": 1940
         },
         {
           "state": "PULAU PINANG",
-          "daily_cases": 5,
-          "cumulative_cases": 1325
+          "daily_cases": 13,
+          "cumulative_cases": 1338
         },
         {
           "state": "SARAWAK",
-          "daily_cases": 3,
-          "cumulative_cases": 1002
+          "daily_cases": 8,
+          "cumulative_cases": 1010
         },
         {
           "state": "PAHANG",
-          "daily_cases": 3,
-          "cumulative_cases": 960
+          "daily_cases": 11,
+          "cumulative_cases": 971
         },
         {
           "state": "KEDAH",
           "daily_cases": 2,
-          "cumulative_cases": 761
+          "cumulative_cases": 763
         },
         {
           "state": "MELAKA",
-          "daily_cases": 2,
-          "cumulative_cases": 701
+          "daily_cases": 1,
+          "cumulative_cases": 702
         },
         {
           "state": "TERENGGANU",
-          "daily_cases": 4,
-          "cumulative_cases": 621
+          "daily_cases": 5,
+          "cumulative_cases": 626
         },
         {
           "state": "PERLIS",
@@ -7136,8 +7136,8 @@ window.IDENGUE_DATA = {
       ],
       "total": {
         "state": "MALAYSIA",
-        "daily_cases": 203,
-        "cumulative_cases": 80076
+        "daily_cases": 273,
+        "cumulative_cases": 80349
       }
     }
   },
@@ -7375,22 +7375,22 @@ window.IDENGUE_DATA = {
       "year": "2026",
       "week": "44",
       "states": {
-        "SELANGOR": 149,
-        "WILAYAH PERSEKUTUAN": 47,
-        "JOHOR": 81,
-        "NEGERI SEMBILAN": 23,
-        "SABAH": 24,
-        "PERAK": 20,
-        "KELANTAN": 9,
-        "PULAU PINANG": 11,
-        "SARAWAK": 9,
-        "PAHANG": 9,
+        "SELANGOR": 173,
+        "WILAYAH PERSEKUTUAN": 63,
+        "JOHOR": 71,
+        "NEGERI SEMBILAN": 34,
+        "SABAH": 30,
+        "PERAK": 23,
+        "KELANTAN": 8,
+        "PULAU PINANG": 19,
+        "SARAWAK": 14,
+        "PAHANG": 17,
         "KEDAH": 2,
-        "MELAKA": 2,
-        "TERENGGANU": 4,
+        "MELAKA": 1,
+        "TERENGGANU": 5,
         "PERLIS": 0,
         "WILAYAH PERSEKUTUAN LABUAN": 0,
-        "MALAYSIA": 390
+        "MALAYSIA": 460
       },
       "totals": {}
     }

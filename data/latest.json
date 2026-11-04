@@ -10,72 +10,72 @@
   "cumulative_start_raw": "31 DEC 2023",
   "cumulative_end_date": "2026-11-02",
   "cumulative_end_raw": "02 Nov 2026",
-  "scraped_at": "2026-11-03T14:40:47.782134+08:00",
+  "scraped_at": "2026-11-04T14:08:21.499459+08:00",
   "states": [
     {
       "state": "SELANGOR",
-      "daily_cases": 86,
-      "cumulative_cases": 33486
+      "daily_cases": 110,
+      "cumulative_cases": 33596
     },
     {
       "state": "WILAYAH PERSEKUTUAN",
-      "daily_cases": 26,
-      "cumulative_cases": 13332
+      "daily_cases": 42,
+      "cumulative_cases": 13374
     },
     {
       "state": "JOHOR",
-      "daily_cases": 39,
-      "cumulative_cases": 13107
+      "daily_cases": 29,
+      "cumulative_cases": 13136
     },
     {
       "state": "NEGERI SEMBILAN",
-      "daily_cases": 9,
-      "cumulative_cases": 5306
+      "daily_cases": 20,
+      "cumulative_cases": 5326
     },
     {
       "state": "SABAH",
-      "daily_cases": 11,
-      "cumulative_cases": 4724
+      "daily_cases": 17,
+      "cumulative_cases": 4741
     },
     {
       "state": "PERAK",
-      "daily_cases": 6,
-      "cumulative_cases": 2601
+      "daily_cases": 9,
+      "cumulative_cases": 2610
     },
     {
       "state": "KELANTAN",
-      "daily_cases": 7,
-      "cumulative_cases": 1934
+      "daily_cases": 6,
+      "cumulative_cases": 1940
     },
     {
       "state": "PULAU PINANG",
-      "daily_cases": 5,
-      "cumulative_cases": 1325
+      "daily_cases": 13,
+      "cumulative_cases": 1338
     },
     {
       "state": "SARAWAK",
-      "daily_cases": 3,
-      "cumulative_cases": 1002
+      "daily_cases": 8,
+      "cumulative_cases": 1010
     },
     {
       "state": "PAHANG",
-      "daily_cases": 3,
-      "cumulative_cases": 960
+      "daily_cases": 11,
+      "cumulative_cases": 971
     },
     {
       "state": "KEDAH",
       "daily_cases": 2,
-      "cumulative_cases": 761
+      "cumulative_cases": 763
     },
     {
       "state": "MELAKA",
-      "daily_cases": 2,
-      "cumulative_cases": 701
+      "daily_cases": 1,
+      "cumulative_cases": 702
     },
     {
       "state": "TERENGGANU",
-      "daily_cases": 4,
-      "cumulative_cases": 621
+      "daily_cases": 5,
+      "cumulative_cases": 626
     },
     {
       "state": "PERLIS",
@@ -90,7 +90,7 @@
   ],
   "total": {
     "state": "MALAYSIA",
-    "daily_cases": 203,
-    "cumulative_cases": 80076
+    "daily_cases": 273,
+    "cumulative_cases": 80349
   }
 }
